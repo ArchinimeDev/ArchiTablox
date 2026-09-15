@@ -2,7 +2,7 @@
 
 import type { Board } from '@/types';
 
-type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile';
+type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
 
 interface Props {
   board: Board | undefined;
@@ -73,12 +73,12 @@ export function MobileBottomNav({
     },
     {
       label: user ? 'Perfil' : 'Entrar',
-      active: view === 'profile',
+      active: view === 'profile' || view === 'shop',
       onClick: () => onSetView('profile'),
       icon: user ? (
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
-            view === 'profile'
+            view === 'profile' || view === 'shop'
               ? 'bg-amber-500 text-slate-950'
               : 'bg-amber-500/25 text-amber-400 ring-2 ring-amber-500/40'
           }`}
@@ -101,7 +101,7 @@ export function MobileBottomNav({
           <button
             key={i}
             onClick={item.onClick}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors relative ${
+            className={`interactive flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg relative ${
               item.active
                 ? 'text-amber-400'
                 : 'text-slate-500 hover:text-slate-300'

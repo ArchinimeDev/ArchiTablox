@@ -19,6 +19,7 @@ import type { ProfileTab, Cosmetic, CosmeticCategory } from '@/types';
 interface Props {
   user: { email: string } | null;
   boardsCount: number;
+  initialTab?: ProfileTab;
   onOpenDrawer: () => void;
   onOpenShare: () => void;
   onOpenShortcuts: () => void;
@@ -53,12 +54,13 @@ function getLast90Days(): Date[] {
 export function ProfileView({
   user,
   boardsCount,
+  initialTab,
   onOpenDrawer,
   onOpenShare,
   onOpenShortcuts,
   onLogout,
 }: Props) {
-  const [tab, setTab] = useState<ProfileTab>('profile');
+  const [tab, setTab] = useState<ProfileTab>(initialTab ?? 'profile');
   const profile = useProfile((s) => s.profile);
   const equip = useProfile((s) => s.equip);
   const buy = useProfile((s) => s.buy);
@@ -98,7 +100,17 @@ export function ProfileView({
         <h1 className="text-lg font-bold text-slate-100">Perfil</h1>
         <div className="text-center py-12 bg-slate-900 border border-slate-800 rounded-xl">
           <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-slate-500"
+            >
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
@@ -127,7 +139,7 @@ export function ProfileView({
               key={t}
               onClick={() => setTab(t)}
               className={`
-                px-3.5 h-8 rounded-md text-xs font-medium transition-all
+                interactive px-3.5 h-8 rounded-md text-xs font-medium transition-all
                 ${tab === t
                   ? 'bg-slate-800 text-slate-100'
                   : 'text-slate-400 hover:text-slate-200'
@@ -322,7 +334,6 @@ export function ProfileView({
 
           <ShopGrid
             profile={profile}
-            buy={buy}
             onBuy={(id) => {
               const cosmetic = getCosmetic(id);
               if (!cosmetic) return;
@@ -402,15 +413,14 @@ function ShopGrid({
   onBuy,
 }: {
   profile: any;
-  buy: (id: string) => boolean;
   onBuy: (id: string) => void;
 }) {
   const [cat, setCat] = useState<CosmeticCategory | 'all'>('all');
 
   const items = useMemo(() => {
     return COSMETICS.filter((c) => {
-      if (!c.price) return false; // No vendibles (solo por nivel)
-      if (profile.owned[c.id]) return false; // Ya comprados
+      if (!c.price) return false;
+      if (profile.owned[c.id]) return false;
       if (cat !== 'all' && c.category !== cat) return false;
       return true;
     });
@@ -423,7 +433,7 @@ function ShopGrid({
           <button
             key={c}
             onClick={() => setCat(c)}
-            className={`shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
+            className={`interactive shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
               cat === c
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -514,7 +524,7 @@ function CollectionGrid({
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
+              className={`interactive shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
                 cat === c
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
                   : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -529,7 +539,7 @@ function CollectionGrid({
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-2.5 h-7 rounded-md text-[11px] font-medium transition-colors ${
+              className={`interactive px-2.5 h-7 rounded-md text-[11px] font-medium transition-colors ${
                 filter === f
                   ? 'bg-slate-800 text-slate-200'
                   : 'text-slate-500 hover:text-slate-300'

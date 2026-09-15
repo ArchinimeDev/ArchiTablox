@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { useBoard } from '@/store/board';
 import { useProfile } from '@/store/profile';
+import { useStats } from '@/store/stats';
 import { XP_VALUES, AP_VALUES, getStreakMultiplier } from '@/lib/xp';
 import { getCosmetic } from '@/lib/cosmetics';
-import { useToast } from '@/components/Toast';
+import { useToast } from '../app/components/Toast';
 import type { ActivityType, TrackAction } from '@/types';
 
 const ACTION_MAP: Partial<Record<ActivityType, TrackAction>> = {
@@ -33,26 +34,15 @@ const COSMETICS_BY_LEVEL: Record<number, string[]> = {
 
 export function useXP() {
   const addXP = useProfile((s) => s.addXP);
-  const profile = useProfile((s) => s.profile);
+  const trackAction = useStats((s) => s.trackAction);
+  const recomputeStreak = useStats((s) => s.recomputeStreak);
   const { toast } = useToast();
   const lastSeenId = useRef<string | null>(null);
-  const streakRef = useRef<number>(1);
 
-  // Leer racha actual del store de stats
   useEffect(() => {
-    const unsub = (window as any).__readStreak;
-    // fallback: leer localStorage directo
-    try {
-      const raw = localStorage.getItem('architablox-stats');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const streak = parsed?.state?.stats?.streak?.current ?? 1;
-        streakRef.current = streak;
-      }
-    } catch {}
-  }, []);
+    recomputeStreak();
+  }, [recomputeStreak]);
 
-  // Suscripción a los eventos del tablero activo
   useEffect(() => {
     const unsub = useBoard.subscribe((state) => {
       const board = state.boards.find((b) => b.id === state.activeBoardId);
@@ -64,22 +54,24 @@ export function useXP() {
       const action = ACTION_MAP[latest.type];
       if (!action) return;
 
+      trackAction(action);
+
+      const currentStreak = useStats.getState().stats.streak.current;
+      const mult = getStreakMultiplier(currentStreak);
+
       const baseXP = XP_VALUES[action] ?? 0;
       const baseAP = AP_VALUES[action] ?? 0;
       if (baseXP === 0 && baseAP === 0) return;
 
-      const mult = getStreakMultiplier(streakRef.current);
       const xpGain = Math.round(baseXP * mult);
       const apGain = baseAP;
 
       const { leveledUp, newLevel } = addXP(xpGain, apGain);
 
-      // Toast de XP (pequeño, no intrusivo)
       if (xpGain > 0) {
         toast(`+${xpGain} XP · +${apGain} AP`, 'info', 1500);
       }
 
-      // Toast de subida de nivel
       if (leveledUp) {
         setTimeout(() => {
           const rewards = COSMETICS_BY_LEVEL[newLevel] ?? [];
@@ -95,7 +87,5 @@ export function useXP() {
       }
     });
     return unsub;
-  }, [addXP, toast]);
-
-  return profile;
+  }, [addXP, toast, trackAction]);
 }
