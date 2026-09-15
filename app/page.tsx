@@ -35,6 +35,7 @@ import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { ThemeToggle } from './components/ThemeToggle';
 import { CommandPalette } from './components/CommandPalette';
+import { sendEmail } from '@/lib/notify';
 
 type ViewMode = 'board' | 'calendar';
 
@@ -478,6 +479,58 @@ export default function Home() {
     }
   };
 
+  // ============ MENCIONES EN COMENTARIOS ============
+  const handleAddCommentWithMentions = async (text: string) => {
+    if (!editingCard || !activeBoard || !user) {
+      if (editingCard) addComment(editingCard.id, text);
+      return;
+    }
+
+    // 1. Guardar el comentario localmente (instantáneo)
+    addComment(editingCard.id, text);
+
+    // 2. Extraer menciones del texto
+    const mentionRegex = /@([A-Za-z0-9._-]+)/g;
+    const matches = text.match(mentionRegex) || [];
+    const mentionedLocals = new Set(
+      matches.map((m) => m.slice(1).toLowerCase())
+    );
+
+    if (mentionedLocals.size === 0) return;
+
+    // 3. Buscar miembros del tablero que coincidan con las menciones
+    const mentionedUsers = members.filter((m) => {
+      const local = m.email.split('@')[0].toLowerCase();
+      return mentionedLocals.has(local);
+    });
+
+    // 4. Excluirse a sí mismo (no te notifiques a ti mismo)
+    const toNotify = mentionedUsers.filter((m) => m.email !== user.email);
+
+    if (toNotify.length === 0) return;
+
+    // 5. Enviar emails (en paralelo, sin bloquear el UI)
+    const preview = text.length > 120 ? text.slice(0, 120) + '…' : text;
+
+    for (const m of toNotify) {
+      try {
+        await sendEmail({
+          to: m.email,
+          type: 'comment',
+          data: {
+            cardTitle: editingCard.title,
+            boardName: activeBoard.name,
+            fromUser: user.email,
+            commentText: preview,
+          },
+        });
+      } catch (err) {
+        console.warn('[mention] no se pudo enviar email a', m.email, err);
+      }
+    }
+  };
+  // ====================================================
+
   const handleCreateAndAssignLabel = (name: string, color: string) => {
     if (editingId) {
       addLabelAndAssign(editingId, name, color);
@@ -517,7 +570,7 @@ export default function Home() {
       {/* ============ HEADER ESCRITORIO ============ */}
       {!isMobile && (
         <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
             {/* ---- ZONA IZQUIERDA ---- */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
@@ -541,7 +594,7 @@ export default function Home() {
               </div>
 
               {user && activeBoard && (
-                <div className="hidden xl:flex items-center gap-2 shrink-0">
+                <div className="hidden xl:flex items-center gap-2 shrink-0 mr-2">
                   <div className="w-px h-5 bg-slate-800" />
                   <MembersAvatars
                     boardId={activeBoard.id}
@@ -566,7 +619,7 @@ export default function Home() {
             </div>
 
             {/* ---- ZONA DERECHA ---- */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 pl-4 border-l border-slate-800/70">
               {/* Buscar */}
               <button
                 onClick={() => setShowCommand(true)}
@@ -790,7 +843,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Buscar (Ctrl+K) */}
               <button
                 onClick={() => setShowCommand(true)}
                 className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center shrink-0 transition-colors"
@@ -1498,7 +1550,7 @@ export default function Home() {
           onToggleLabel={(labelId) => toggleCardLabel(editingCard.id, labelId)}
           onCreateAndAssignLabel={handleCreateAndAssignLabel}
           onDeleteLabel={(labelId) => deleteLabel(labelId)}
-          onAddComment={(text) => addComment(editingCard.id, text)}
+          onAddComment={handleAddCommentWithMentions}
           onDeleteComment={(commentId) =>
             deleteComment(editingCard.id, commentId)
           }
