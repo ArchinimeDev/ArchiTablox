@@ -33,6 +33,7 @@ import { ActivityPanel } from './components/ActivityPanel';
 import { ShareModal } from './components/ShareModal';
 import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
+import { ThemeToggle } from './components/ThemeToggle';
 
 type ViewMode = 'board' | 'calendar';
 
@@ -685,6 +686,8 @@ export default function Home() {
                 </a>
               )}
 
+              <ThemeToggle variant="header" />
+
               <button
                 onClick={() => setShowShortcuts(true)}
                 className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors text-xs font-bold shrink-0"
@@ -943,6 +946,10 @@ export default function Home() {
                   </svg>
                   <span className="flex-1 text-left">Atajos de teclado</span>
                 </button>
+                <ThemeToggle
+                  variant="menu"
+                  onToggle={() => setShowMobileMenu(false)}
+                />
               </div>
 
               {activeBoard && (
