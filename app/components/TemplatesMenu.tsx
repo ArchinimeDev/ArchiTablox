@@ -32,10 +32,10 @@ export function TemplatesMenu({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors text-slate-300"
+        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 h-9 text-xs flex items-center gap-1.5 transition-colors text-slate-300 shrink-0"
         title="Plantillas"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -47,7 +47,7 @@ export function TemplatesMenu({
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-1.5 w-[calc(100vw-1.5rem)] max-w-72 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 mt-1.5 w-[calc(100vw-1.5rem)] max-w-72 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden">
           <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-medium border-b border-slate-800 flex items-center justify-between">
             <span>Plantillas ({templates.length})</span>
             <button
