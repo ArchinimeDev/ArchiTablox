@@ -55,7 +55,7 @@ export function MembersAvatars({ boardId, onOpenShare }: Props) {
   return (
     <button
       onClick={onOpenShare}
-      className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2 py-1.5 transition-colors group"
+      className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 h-9 transition-colors group shrink-0"
       title={`${members.length} miembro${members.length === 1 ? '' : 's'} · Click para gestionar`}
     >
       <div className="flex -space-x-1.5">

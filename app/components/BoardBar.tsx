@@ -93,7 +93,7 @@ export function BoardBar({
     <div ref={ref} className="relative">
       <button
         onClick={handleToggle}
-        className={`bg-slate-900 hover:bg-slate-800 border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm flex items-center gap-1.5 transition-colors relative ${
+        className={`bg-slate-900 hover:bg-slate-800 border rounded-lg px-2.5 h-9 text-xs sm:text-sm flex items-center gap-1.5 transition-colors relative w-full ${
           hasNewBoards
             ? 'border-red-500/60 hover:border-red-500/80'
             : 'border-slate-800 hover:border-slate-700'
@@ -108,12 +108,12 @@ export function BoardBar({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={hasNewBoards ? 'text-red-400' : 'text-slate-500'}
+          className={hasNewBoards ? 'text-red-400 shrink-0' : 'text-slate-500 shrink-0'}
         >
           <rect x="3" y="3" width="7" height="18" rx="1" />
           <rect x="14" y="3" width="7" height="18" rx="1" />
         </svg>
-        <span className="font-medium max-w-[100px] sm:max-w-[180px] truncate">
+        <span className="font-medium flex-1 text-left truncate">
           {activeBoard?.name ?? 'Tablero'}
         </span>
         <svg
@@ -125,7 +125,7 @@ export function BoardBar({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={hasNewBoards ? 'text-red-400' : 'text-slate-500'}
+          className={`shrink-0 ${hasNewBoards ? 'text-red-400' : 'text-slate-500'}`}
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -196,7 +196,6 @@ export function BoardBar({
                       </span>
                       <span className="truncate flex-1">{b.name}</span>
 
-                      {/* 🆕 Badge rojo en tableros nuevos */}
                       {isNew && (
                         <>
                           <span className="relative flex h-2 w-2 shrink-0">
