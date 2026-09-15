@@ -102,6 +102,7 @@ export default function Home() {
   const [addingColumn, setAddingColumn] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<number | null>(null);
   const [activeColumnIdx, setActiveColumnIdx] = useState(0);
   const [editingTemplate, setEditingTemplate] = useState<
@@ -842,107 +843,252 @@ export default function Home() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {view === 'board' && (
-            <>
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 min-w-[280px]">
+        {/* ============ TOOLBAR ============ */}
+        {isMobile ? (
+          <div className="mb-3 space-y-2">
+            {/* Fila 1: Nueva tarjeta */}
+            {view === 'board' && (
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <input
+                    ref={newCardInputRef}
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                    placeholder="Nueva tarjeta..."
+                    className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
+                  />
+                </div>
+                <button
+                  onClick={handleAdd}
+                  disabled={!newTitle.trim()}
+                  className="bg-amber-500 hover:bg-amber-400 active:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-bold rounded-lg w-9 h-9 flex items-center justify-center shrink-0 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+                <TemplatesMenu
+                  templates={templates}
+                  onApply={handleApplyTemplate}
+                  onEdit={(t) => setEditingTemplate(t)}
+                  onCreate={() => setEditingTemplate(null)}
+                />
+              </div>
+            )}
+
+            {/* Fila 2: Buscar + Filtros */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                  <path d="M12 5v14M5 12h14" />
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
                 </svg>
                 <input
-                  ref={newCardInputRef}
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                  placeholder="Añadir tarjeta... (N)"
+                  ref={searchInputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar..."
                   className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
                 />
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as Priority)}
-                  className="bg-slate-950 border border-slate-800 rounded text-xs text-slate-300 px-1.5 py-0.5 focus:outline-none focus:border-slate-700 cursor-pointer"
-                >
-                  {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
-                    <option key={p} value={p}>
-                      {RARITY_LABEL[p]}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAdd}
-                  className="bg-amber-500 hover:bg-amber-400 active:bg-amber-500 text-slate-950 font-medium text-xs rounded px-3 py-1 transition-colors shrink-0"
-                >
-                  Añadir
-                </button>
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="text-slate-500 hover:text-slate-200 p-0.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
-              <TemplatesMenu
-                templates={templates}
-                onApply={handleApplyTemplate}
-                onEdit={(t) => setEditingTemplate(t)}
-                onCreate={() => setEditingTemplate(null)}
-              />
-            </>
-          )}
+              <button
+                onClick={() => setShowFilters((s) => !s)}
+                className={`h-9 px-3 rounded-lg border text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
+                  hasActiveFilters || showFilters
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Filtros
+                {hasActiveFilters && (
+                  <span className="bg-amber-500 text-slate-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {(filterPriority !== 'all' ? 1 : 0) +
+                      (filterLabel !== 'all' ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            </div>
 
-          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 sm:flex-initial sm:w-44 min-w-[160px]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              ref={searchInputRef}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar... (/)"
-              className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
-            />
+            {/* Panel de filtros (colapsable) */}
+            {showFilters && (
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium shrink-0 w-16">
+                    Prioridad
+                  </span>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) =>
+                      setFilterPriority(e.target.value as Priority | 'all')
+                    }
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
+                  >
+                    <option value="all">Todas</option>
+                    {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
+                      <option key={p} value={p}>
+                        {RARITY_LABEL[p]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {labels.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium shrink-0 w-16">
+                      Etiqueta
+                    </span>
+                    <select
+                      value={filterLabel}
+                      onChange={(e) => setFilterLabel(e.target.value)}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
+                    >
+                      <option value="all">Todas</option>
+                      {labels.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setFilterPriority('all');
+                      setFilterLabel('all');
+                    }}
+                    className="w-full text-xs text-slate-400 hover:text-red-400 py-1.5 rounded-lg border border-slate-800 hover:border-red-900 transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+        ) : (
+          // ========== TOOLBAR ESCRITORIO ==========
+          <div className="flex flex-wrap gap-2 mb-4">
+            {view === 'board' && (
+              <>
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 min-w-[280px]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <input
+                    ref={newCardInputRef}
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                    placeholder="Añadir tarjeta... (N)"
+                    className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
+                  />
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as Priority)}
+                    className="bg-slate-950 border border-slate-800 rounded text-xs text-slate-300 px-1.5 py-0.5 focus:outline-none focus:border-slate-700 cursor-pointer"
+                  >
+                    {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
+                      <option key={p} value={p}>
+                        {RARITY_LABEL[p]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAdd}
+                    className="bg-amber-500 hover:bg-amber-400 active:bg-amber-500 text-slate-950 font-medium text-xs rounded px-3 py-1 transition-colors shrink-0"
+                  >
+                    Añadir
+                  </button>
+                </div>
 
-          <select
-            value={filterPriority}
-            onChange={(e) =>
-              setFilterPriority(e.target.value as Priority | 'all')
-            }
-            className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
-          >
-            <option value="all">Prioridad</option>
-            {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
-              <option key={p} value={p}>
-                {RARITY_LABEL[p]}
-              </option>
-            ))}
-          </select>
+                <TemplatesMenu
+                  templates={templates}
+                  onApply={handleApplyTemplate}
+                  onEdit={(t) => setEditingTemplate(t)}
+                  onCreate={() => setEditingTemplate(null)}
+                />
+              </>
+            )}
 
-          {labels.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 sm:flex-initial sm:w-44 min-w-[160px]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                ref={searchInputRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar... (/)"
+                className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
+              />
+            </div>
+
             <select
-              value={filterLabel}
-              onChange={(e) => setFilterLabel(e.target.value)}
+              value={filterPriority}
+              onChange={(e) =>
+                setFilterPriority(e.target.value as Priority | 'all')
+              }
               className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
             >
-              <option value="all">Etiqueta</option>
-              {labels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
+              <option value="all">Prioridad</option>
+              {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
+                <option key={p} value={p}>
+                  {RARITY_LABEL[p]}
                 </option>
               ))}
             </select>
-          )}
 
-          {hasActiveFilters && (
-            <button
-              onClick={() => {
-                setSearch('');
-                setFilterPriority('all');
-                setFilterLabel('all');
-              }}
-              className="text-xs text-slate-500 hover:text-slate-200 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors"
-            >
-              Limpiar
-            </button>
-          )}
-        </div>
+            {labels.length > 0 && (
+              <select
+                value={filterLabel}
+                onChange={(e) => setFilterLabel(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
+              >
+                <option value="all">Etiqueta</option>
+                {labels.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setFilterPriority('all');
+                  setFilterLabel('all');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-200 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        )}
 
         {view === 'board' && (
           <>
