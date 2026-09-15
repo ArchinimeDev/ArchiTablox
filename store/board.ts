@@ -36,8 +36,30 @@ const LABEL_COLOR_POOL = [
 
 const MAX_ACTIVITY = 200;
 
-let counter = 0;
-const uid = () => `id_${Date.now().toString(36)}_${(counter++).toString(36)}`;
+/**
+ * Genera un UUID v4 válido (compatible con Supabase).
+ * - Usa crypto.randomUUID() cuando está disponible.
+ * - Fallback manual para entornos viejos.
+ */
+const uid = (): string => {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isUuid = (s: unknown): s is string =>
+  typeof s === 'string' && UUID_REGEX.test(s);
 
 function arrayMove<T>(array: T[], from: number, to: number): T[] {
   const newArray = array.slice();
@@ -1085,8 +1107,10 @@ export const useBoard = create<Store>()(
     }),
     {
       name: 'kanban-quest-storage',
-      version: 21,
+      // Subimos a 22: esta versión regenera IDs viejos (id_xxx) a UUIDs válidos
+      version: 22,
       migrate: (persisted: any, version) => {
+        // Migración desde versiones muy antiguas (formato columnas sueltas)
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {
             id: uid(),
@@ -1103,7 +1127,43 @@ export const useBoard = create<Store>()(
             activeBoardId: migratedBoard.id,
           };
         }
-        if (persisted?.boards) {
+
+        if (persisted?.boards && Array.isArray(persisted.boards)) {
+          // Detectar si algún board tiene un ID no-UUID (formato antiguo)
+          const hasInvalidIds = persisted.boards.some(
+            (b: Board) => !isUuid(b.id)
+          );
+
+          // Si hay IDs inválidos, regenerar TODOS los boards con UUIDs nuevos
+          if (hasInvalidIds) {
+            const regenerated: Board[] = persisted.boards.map((b: Board) => {
+              // Si ya es UUID, lo dejamos como está
+              if (isUuid(b.id)) {
+                return {
+                  ...b,
+                  notificationSettings:
+                    b.notificationSettings ?? {
+                      ...DEFAULT_NOTIFICATION_SETTINGS,
+                    },
+                  templates:
+                    b.templates ?? DEFAULT_TEMPLATES.map((t) => ({ ...t })),
+                  activity: b.activity ?? [],
+                };
+              }
+              // Si no es UUID, regeneramos el board completo
+              const regen = regenerateBoardIds(b);
+              regen.name = b.name;
+              return regen;
+            });
+
+            return {
+              boards: regenerated,
+              activeBoardId:
+                regenerated[0]?.id ?? persisted.activeBoardId ?? '',
+            };
+          }
+
+          // Si todos los IDs son válidos, solo normalizar campos opcionales
           persisted.boards = persisted.boards.map((b: Board) => ({
             ...b,
             notificationSettings:
