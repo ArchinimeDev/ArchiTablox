@@ -83,3 +83,21 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ===== PWA: cuando se instala como app ===== */
+
+@media all and (display-mode: standalone) {
+  body {
+    /* Área segura para iPhone con notch y Android con bordes curvos */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Evitar el "rebote" vertical al llegar arriba/abajo cuando está instalada */
+html,
+body {
+  overscroll-behavior-y: none;
+}
