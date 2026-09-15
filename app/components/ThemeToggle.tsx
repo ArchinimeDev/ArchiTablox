@@ -10,7 +10,7 @@ import {
 } from './ThemeProvider';
 
 interface Props {
-  variant?: 'header' | 'menu';
+  variant?: 'header' | 'menu' | 'sidebar';
   onToggle?: () => void;
 }
 
@@ -53,8 +53,68 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
         <div className="w-full h-11 rounded-lg bg-slate-950/60 border border-slate-800" />
       );
     }
+    if (variant === 'sidebar') {
+      return (
+        <div className="w-full h-8 rounded-lg bg-slate-900 border border-slate-800" />
+      );
+    }
     return (
       <div className="w-8 h-8 sm:w-auto sm:px-2.5 sm:h-9 rounded-lg bg-slate-900 border border-slate-800 shrink-0" />
+    );
+  }
+
+  // ============ VARIANTE SIDEBAR (PC) ============
+  if (variant === 'sidebar') {
+    return (
+      <div ref={ref} className="relative">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
+        >
+          <span className="text-sm leading-none">{currentTheme.icon}</span>
+          <span className="flex-1 text-left">{currentTheme.name}</span>
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-slate-600"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        {open && (
+          <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden p-1">
+            {THEMES.map((t) => {
+              const active = t.id === theme;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleSelect(t.id)}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors text-xs ${
+                    active ? 'bg-slate-800' : 'hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="text-sm leading-none shrink-0">
+                    {t.icon}
+                  </span>
+                  <span className="flex-1 text-left text-slate-200">
+                    {t.name}
+                  </span>
+                  <span
+                    className="w-3 h-3 rounded-full border border-slate-700 shrink-0"
+                    style={{ backgroundColor: t.color }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 
