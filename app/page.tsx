@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -359,6 +365,72 @@ export default function Home() {
   ]);
   // ==========================================
 
+  // ============ BÚSQUEDA MEJORADA ============
+  const cardMatchesQuery = useCallback(
+    (c: CardType, q: string): boolean => {
+      if (!q) return true;
+      const lowerQ = q.toLowerCase();
+
+      // Título
+      if (c.title.toLowerCase().includes(lowerQ)) return true;
+
+      // Descripción
+      if ((c.description ?? '').toLowerCase().includes(lowerQ)) return true;
+
+      // Comentarios
+      if (
+        c.comments?.some((cm) =>
+          cm.text.toLowerCase().includes(lowerQ)
+        )
+      ) {
+        return true;
+      }
+
+      // Adjuntos (nombre del archivo)
+      if (
+        c.attachments?.some((a) =>
+          a.name.toLowerCase().includes(lowerQ)
+        )
+      ) {
+        return true;
+      }
+
+      // Subtareas
+      if (
+        c.subtasks?.some((s) =>
+          s.title.toLowerCase().includes(lowerQ)
+        )
+      ) {
+        return true;
+      }
+
+      // Etiquetas (nombre)
+      if (
+        c.labelIds?.some((id) => {
+          const label = labels.find((l) => l.id === id);
+          return label?.name.toLowerCase().includes(lowerQ);
+        })
+      ) {
+        return true;
+      }
+
+      // Asignados (email)
+      const assignees = c.assigneeIds ?? [];
+      if (
+        assignees.some((uid) => {
+          const member = members.find((m) => m.user_id === uid);
+          return member?.email.toLowerCase().includes(lowerQ);
+        })
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+    [labels, members]
+  );
+  // ============================================
+
   const filteredByColumn = useMemo(() => {
     const q = search.toLowerCase().trim();
     const result: Record<string, string[]> = {};
@@ -371,17 +443,12 @@ export default function Home() {
         if (filterLabel !== 'all') {
           if (!(c.labelIds ?? []).includes(filterLabel)) return false;
         }
-        if (q) {
-          const hay =
-            c.title.toLowerCase().includes(q) ||
-            (c.description ?? '').toLowerCase().includes(q);
-          if (!hay) return false;
-        }
+        if (!cardMatchesQuery(c, q)) return false;
         return true;
       });
     }
     return result;
-  }, [columns, cards, search, filterPriority, filterLabel]);
+  }, [columns, cards, search, filterPriority, filterLabel, cardMatchesQuery]);
 
   const filteredCards = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -392,15 +459,10 @@ export default function Home() {
       if (filterLabel !== 'all') {
         if (!(c.labelIds ?? []).includes(filterLabel)) return false;
       }
-      if (q) {
-        const hay =
-          c.title.toLowerCase().includes(q) ||
-          (c.description ?? '').toLowerCase().includes(q);
-        if (!hay) return false;
-      }
+      if (!cardMatchesQuery(c, q)) return false;
       return true;
     });
-  }, [cards, search, filterPriority, filterLabel]);
+  }, [cards, search, filterPriority, filterLabel, cardMatchesQuery]);
 
   const archivedCards = useMemo(
     () => Object.values(cards).filter((c) => c.archived),
@@ -1199,7 +1261,7 @@ export default function Home() {
                   ref={searchInputRef}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar..."
+                  placeholder="Buscar en todo..."
                   className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
                 />
                 {search && (
@@ -1346,7 +1408,7 @@ export default function Home() {
                 ref={searchInputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar... (/)"
+                placeholder="Buscar en todo... (/)"
                 className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
               />
             </div>
