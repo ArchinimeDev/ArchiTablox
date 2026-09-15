@@ -34,6 +34,7 @@ import { ShareModal } from './components/ShareModal';
 import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { ThemeToggle } from './components/ThemeToggle';
+import { CommandPalette } from './components/CommandPalette';
 
 type ViewMode = 'board' | 'calendar';
 
@@ -123,6 +124,7 @@ export default function Home() {
   const [showShare, setShowShare] = useState(false);
   const [newBoardIds, setNewBoardIds] = useState<string[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [showCommand, setShowCommand] = useState(false);
 
   const newCardInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -162,14 +164,28 @@ export default function Home() {
 
   // Cargar miembros del tablero activo
   useEffect(() => {
-    if (!activeBoardId) return;
+    if (!activeBoardId || !userId) return;
+
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        activeBoardId
+      );
+    if (!isUuid) {
+      setMembers([]);
+      return;
+    }
+
     const supabase = createClient();
     supabase
       .rpc('get_board_members', { p_board_id: activeBoardId })
-      .then(({ data }) => {
-        if (data) setMembers(data as Member[]);
+      .then(({ data, error }) => {
+        if (error) {
+          setMembers([]);
+          return;
+        }
+        setMembers((data as Member[]) ?? []);
       });
-  }, [activeBoardId]);
+  }, [activeBoardId, userId]);
 
   // ============ AUTENTICACIÓN ============
   useEffect(() => {
@@ -266,6 +282,13 @@ export default function Home() {
         target.tagName === 'SELECT' ||
         target.isContentEditable;
 
+      // Ctrl+K / Cmd+K → abrir paleta de comandos
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setShowCommand((s) => !s);
+        return;
+      }
+
       if (e.key === 'Escape') {
         if (editingId) return setEditingId(null);
         if (showShortcuts) return setShowShortcuts(false);
@@ -330,6 +353,7 @@ export default function Home() {
     search,
     filterPriority,
     filterLabel,
+    showCommand,
   ]);
   // ==========================================
 
@@ -538,6 +562,22 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {/* Botón de búsqueda global (abre CommandPalette) */}
+              <button
+                onClick={() => setShowCommand(true)}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg h-8 px-2.5 flex items-center gap-2 transition-colors shrink-0 text-xs text-slate-400"
+                title="Buscar (Ctrl+K)"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <span className="hidden xl:inline">Buscar...</span>
+                <kbd className="hidden xl:inline font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
+                  Ctrl K
+                </kbd>
+              </button>
+
               <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8">
                 <button
                   onClick={() => setView('board')}
@@ -1442,6 +1482,15 @@ export default function Home() {
         />
       )}
 
+      <CommandPalette
+        open={showCommand}
+        onClose={() => setShowCommand(false)}
+        boards={boards}
+        activeBoardId={activeBoardId}
+        onOpenCard={(cardId) => setEditingId(cardId)}
+        onSwitchBoard={switchBoard}
+      />
+
       {dayModalDate !== null && (
         <DayModal
           date={dayModalDate}
@@ -1494,8 +1543,12 @@ export default function Home() {
             </div>
 
             <div className="space-y-2 text-sm">
+              <ShortcutRow
+                keys={['Ctrl', 'K']}
+                description="Búsqueda global"
+              />
               <ShortcutRow keys={['N']} description="Nueva tarjeta" />
-              <ShortcutRow keys={['/']} description="Buscar" />
+              <ShortcutRow keys={['/']} description="Buscar en tablero" />
               <ShortcutRow
                 keys={['C']}
                 description="Cambiar entre tablero y calendario"
