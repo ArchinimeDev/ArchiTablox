@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#020617',
+  themeColor: '#f8fafc',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -40,13 +40,31 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+// Script que se ejecuta ANTES de que React hidrate.
+// Lee el tema guardado y lo aplica al <html> para evitar flash.
+const themeInitScript = `
+(function() {
+  try {
+    var t = localStorage.getItem('architablox-theme') || 'light';
+    var valid = ['light','dark','midnight','forest','sunset','rose'];
+    if (valid.indexOf(t) === -1) t = 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var isDark = t === 'dark' || t === 'midnight' || t === 'forest';
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" data-theme="dark" suppressHydrationWarning>
+    <html lang="es" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

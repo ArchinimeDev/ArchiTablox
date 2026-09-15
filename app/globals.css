@@ -1,42 +1,138 @@
 @import "tailwindcss";
 
 /* ================================================================
-   TEMA OSCURO (por defecto)
+   VARIABLES BASE (tema por defecto: light)
+   Tailwind v4 usa estas variables internamente. Si las cambiás en
+   [data-theme="..."], cambia toda la app sin tocar componentes.
    ================================================================ */
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+:root,
+[data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  color-scheme: light;
+
+  --color-slate-50:  #020617;
+  --color-slate-100: #0f172a;
+  --color-slate-200: #1e293b;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-600: #94a3b8;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #f8fafc;
 }
 
 /* ================================================================
-   TEMA CLARO
-   Sobrescribe las variables de color de Tailwind v4.
-   Como Tailwind usa var(--color-*) en todas sus clases (bg-slate-950,
-   text-slate-100, etc.), basta con cambiar las variables aquí y toda
-   la app cambia de color sin tocar ningún componente.
+   DARK (slate oscuro - el de siempre)
    ================================================================ */
 
-[data-theme="light"] {
-  --background: #f1f5f9;
-  --foreground: #0f172a;
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  color-scheme: dark;
 
-  /* Invertimos los slate */
-  --color-slate-950: #f8fafc;
-  --color-slate-900: #ffffff;
-  --color-slate-800: #e2e8f0;
-  --color-slate-700: #cbd5e1;
-  --color-slate-600: #94a3b8;
+  --color-slate-50:  #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
   --color-slate-500: #64748b;
-  --color-slate-400: #475569;
-  --color-slate-300: #334155;
-  --color-slate-200: #1e293b;
-  --color-slate-100: #0f172a;
-  --color-slate-50: #020617;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 }
 
-[data-theme="light"] {
+/* ================================================================
+   MIDNIGHT (azul profundo)
+   ================================================================ */
+
+[data-theme="midnight"] {
+  --background: #0a0e27;
+  --foreground: #e0e7ff;
+  color-scheme: dark;
+
+  --color-slate-50:  #eef2ff;
+  --color-slate-100: #e0e7ff;
+  --color-slate-200: #c7d2fe;
+  --color-slate-300: #a5b4fc;
+  --color-slate-400: #818cf8;
+  --color-slate-500: #6366f1;
+  --color-slate-600: #4f46e5;
+  --color-slate-700: #3730a3;
+  --color-slate-800: #1e1b4b;
+  --color-slate-900: #141438;
+  --color-slate-950: #0a0e27;
+}
+
+/* ================================================================
+   FOREST (verde bosque)
+   ================================================================ */
+
+[data-theme="forest"] {
+  --background: #0a1a12;
+  --foreground: #dcfce7;
+  color-scheme: dark;
+
+  --color-slate-50:  #f0fdf4;
+  --color-slate-100: #dcfce7;
+  --color-slate-200: #bbf7d0;
+  --color-slate-300: #86efac;
+  --color-slate-400: #4ade80;
+  --color-slate-500: #22c55e;
+  --color-slate-600: #16a34a;
+  --color-slate-700: #15803d;
+  --color-slate-800: #14532d;
+  --color-slate-900: #0f2e1e;
+  --color-slate-950: #0a1a12;
+}
+
+/* ================================================================
+   SUNSET (crema cálido)
+   ================================================================ */
+
+[data-theme="sunset"] {
+  --background: #fef3e2;
+  --foreground: #431407;
   color-scheme: light;
+
+  --color-slate-50:  #431407;
+  --color-slate-100: #7c2d12;
+  --color-slate-200: #9a3412;
+  --color-slate-300: #c2410c;
+  --color-slate-400: #ea580c;
+  --color-slate-500: #f97316;
+  --color-slate-600: #fb923c;
+  --color-slate-700: #fdba74;
+  --color-slate-800: #fed7aa;
+  --color-slate-900: #fff7ed;
+  --color-slate-950: #fef3e2;
+}
+
+/* ================================================================
+   ROSE (rosa suave)
+   ================================================================ */
+
+[data-theme="rose"] {
+  --background: #fff1f5;
+  --foreground: #4c0519;
+  color-scheme: light;
+
+  --color-slate-50:  #4c0519;
+  --color-slate-100: #881337;
+  --color-slate-200: #9f1239;
+  --color-slate-300: #be123c;
+  --color-slate-400: #e11d48;
+  --color-slate-500: #f43f5e;
+  --color-slate-600: #fb7185;
+  --color-slate-700: #fda4af;
+  --color-slate-800: #fecdd3;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #fff1f5;
 }
 
 /* ================================================================
@@ -82,11 +178,15 @@ body {
   background: transparent;
 }
 
-[data-theme="light"] * {
+[data-theme="light"] *,
+[data-theme="sunset"] *,
+[data-theme="rose"] * {
   scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
 }
 
-[data-theme="light"] *::-webkit-scrollbar-thumb {
+[data-theme="light"] *::-webkit-scrollbar-thumb,
+[data-theme="sunset"] *::-webkit-scrollbar-thumb,
+[data-theme="rose"] *::-webkit-scrollbar-thumb {
   background-color: rgba(100, 116, 139, 0.4);
 }
 
