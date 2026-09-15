@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type {
   ActivityEvent,
   ActivityType,
+  Attachment,
   Board,
   Card,
   CardTemplate,
@@ -111,7 +112,6 @@ function createInitialBoard(name: string): Board {
 function regenerateBoardIds(board: Board): Board {
   const columnIdMap: Record<string, string> = {};
 
-  // ✅ FIX: tipamos explícitamente como Column[] para que cardIds sea string[]
   const newColumns: Column[] = board.columns.map((c) => {
     const newId = uid();
     columnIdMap[c.id] = newId;
@@ -129,6 +129,8 @@ function regenerateBoardIds(board: Board): Board {
       columnId: newColumnId,
       subtasks: card.subtasks?.map((s) => ({ ...s, id: uid() })) ?? [],
       comments: card.comments?.map((c) => ({ ...c, id: uid() })) ?? [],
+      attachments:
+        card.attachments?.map((a) => ({ ...a, id: uid() })) ?? [],
     };
     if (!card.archived) {
       const col = newColumns.find((c) => c.id === newColumnId);
@@ -210,6 +212,12 @@ interface Store {
   addComment: (cardId: string, text: string) => void;
   deleteComment: (cardId: string, commentId: string) => void;
 
+  addAttachment: (
+    cardId: string,
+    attachment: Omit<Attachment, 'id' | 'createdAt'>
+  ) => void;
+  deleteAttachment: (cardId: string, attachmentId: string) => void;
+
   addLabel: (name: string, color: string) => void;
   addLabelAndAssign: (cardId: string, name: string, color: string) => void;
   updateLabel: (labelId: string, patch: Partial<Label>) => void;
@@ -274,6 +282,7 @@ export const useBoard = create<Store>()(
               subtasks: [],
               labelIds: [],
               comments: [],
+              attachments: [],
               archived: false,
             };
             const column = board.columns.find((c) => c.id === columnId);
@@ -657,6 +666,54 @@ export const useBoard = create<Store>()(
           })
         ),
 
+      addAttachment: (cardId, attachment) =>
+        set((state) =>
+          withActiveBoard(state, (board) => {
+            const card = board.cards[cardId];
+            if (!card) return board;
+            const newAttachment: Attachment = {
+              id: uid(),
+              createdAt: Date.now(),
+              ...attachment,
+            };
+            return {
+              ...board,
+              cards: {
+                ...board.cards,
+                [cardId]: {
+                  ...card,
+                  attachments: [...(card.attachments ?? []), newAttachment],
+                },
+              },
+              activity: pushActivity(board, 'attachment_added', {
+                cardId,
+                cardTitle: card.title,
+                extra: attachment.name,
+              }),
+            };
+          })
+        ),
+
+      deleteAttachment: (cardId, attachmentId) =>
+        set((state) =>
+          withActiveBoard(state, (board) => {
+            const card = board.cards[cardId];
+            if (!card || !card.attachments) return board;
+            return {
+              ...board,
+              cards: {
+                ...board.cards,
+                [cardId]: {
+                  ...card,
+                  attachments: card.attachments.filter(
+                    (a) => a.id !== attachmentId
+                  ),
+                },
+              },
+            };
+          })
+        ),
+
       addLabel: (name, color) =>
         set((state) =>
           withActiveBoard(state, (board) => ({
@@ -932,6 +989,7 @@ export const useBoard = create<Store>()(
               })),
               labelIds,
               comments: [],
+              attachments: [],
               archived: false,
             };
 
@@ -992,7 +1050,7 @@ export const useBoard = create<Store>()(
     }),
     {
       name: 'kanban-quest-storage',
-      version: 19,
+      version: 20,
       migrate: (persisted: any, version) => {
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {

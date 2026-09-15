@@ -18,6 +18,15 @@ export interface Comment {
   createdAt: number;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  createdAt: number;
+}
+
 export interface Card {
   id: string;
   title: string;
@@ -31,6 +40,7 @@ export interface Card {
   subtasks?: Subtask[];
   labelIds?: string[];
   comments?: Comment[];
+  attachments?: Attachment[];
   archived?: boolean;
   archivedAt?: number;
 }
@@ -70,7 +80,8 @@ export type ActivityType =
   | 'card_deleted'
   | 'card_renamed'
   | 'comment_added'
-  | 'template_applied';
+  | 'template_applied'
+  | 'attachment_added';
 
 export interface ActivityEvent {
   id: string;

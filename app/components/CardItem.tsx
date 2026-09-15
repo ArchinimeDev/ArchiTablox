@@ -45,6 +45,7 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
   const doneSubtasks = subtasks.filter((s) => s.done).length;
   const hasSubtasks = subtasks.length > 0;
   const commentCount = card.comments?.length ?? 0;
+  const attachmentCount = card.attachments?.length ?? 0;
 
   const cardLabels = (card.labelIds ?? [])
     .map((id) => labels.find((l) => l.id === id))
@@ -141,9 +142,12 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
         </p>
       )}
 
-      {(hasSubtasks || dueLabel || commentCount > 0) && (
+      {(hasSubtasks ||
+        dueLabel ||
+        commentCount > 0 ||
+        attachmentCount > 0) && (
         <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/70">
-          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
             {hasSubtasks && (
               <div className="flex items-center gap-1">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -156,7 +160,6 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
               </div>
             )}
 
-            {/* 🎯 BADGE DESTACADO DE COMENTARIOS */}
             {commentCount > 0 && (
               <div
                 className="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 px-1.5 py-0.5 rounded-md font-semibold"
@@ -179,11 +182,34 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
                 </span>
               </div>
             )}
+
+            {attachmentCount > 0 && (
+              <div
+                className="flex items-center gap-1 bg-blue-500/15 border border-blue-500/40 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold"
+                title={`${attachmentCount} adjunto${attachmentCount === 1 ? '' : 's'}`}
+              >
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span className="font-mono text-[10px] leading-none">
+                  {attachmentCount}
+                </span>
+              </div>
+            )}
           </div>
 
           {dueLabel && (
             <span
-              className={`text-[10px] flex items-center gap-1 font-medium ${
+              className={`text-[10px] flex items-center gap-1 font-medium shrink-0 ${
                 isOverdue ? 'text-red-400' : 'text-slate-500'
               }`}
             >

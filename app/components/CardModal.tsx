@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { Card, Label, Priority } from '@/types';
+import { useEffect, useState, useRef } from 'react';
+import type { Card, Label, Priority, Attachment } from '@/types';
 import { RARITY_LABEL } from '@/lib/gamification';
 import { LABEL_COLORS, hexWithAlpha } from '@/lib/labels';
 import { toDateInput, fromDateInput } from '@/lib/dateUtils';
+import { createClient } from '@/utils/supabase/client';
 
 interface Props {
   card: Card;
@@ -21,6 +22,10 @@ interface Props {
   onDeleteLabel: (labelId: string) => void;
   onAddComment: (text: string) => void;
   onDeleteComment: (commentId: string) => void;
+  onAddAttachment: (
+    attachment: Omit<Attachment, 'id' | 'createdAt'>
+  ) => void;
+  onDeleteAttachment: (attachmentId: string) => void;
 }
 
 function renderCommentText(text: string) {
@@ -62,6 +67,16 @@ function relativeTime(ts: number): string {
   });
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isImage(type: string) {
+  return type.startsWith('image/');
+}
+
 export function CardModal({
   card,
   labels,
@@ -77,6 +92,8 @@ export function CardModal({
   onDeleteLabel,
   onAddComment,
   onDeleteComment,
+  onAddAttachment,
+  onDeleteAttachment,
 }: Props) {
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? '');
@@ -89,12 +106,16 @@ export function CardModal({
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0]);
   const [newComment, setNewComment] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const subtasks = card.subtasks ?? [];
   const doneCount = subtasks.filter((s) => s.done).length;
   const total = subtasks.length;
   const cardLabelIds = card.labelIds ?? [];
   const comments = card.comments ?? [];
+  const attachments = card.attachments ?? [];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -149,6 +170,60 @@ export function CardModal({
     if (!t) return;
     onAddComment(t);
     setNewComment('');
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('El archivo supera el límite de 10 MB');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const supabase = createClient();
+
+      const ext = file.name.split('.').pop() ?? '';
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).slice(2, 8);
+      const filename = `${timestamp}_${random}.${ext}`;
+      const path = `${card.id}/${filename}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('card-attachments')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadErr) {
+        setUploadError(uploadErr.message);
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('card-attachments')
+        .getPublicUrl(path);
+
+      onAddAttachment({
+        name: file.name,
+        url: urlData.publicUrl,
+        size: file.size,
+        type: file.type || 'application/octet-stream',
+      });
+
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      setUploadError(err.message ?? 'Error al subir el archivo');
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -325,6 +400,151 @@ export function CardModal({
             </div>
           </div>
 
+          {/* ADJUNTOS */}
+          <div className="mb-5 pt-4 border-t border-slate-800">
+            <div className="flex justify-between items-center mb-2.5">
+              <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium flex items-center gap-2">
+                📎 Adjuntos
+                {attachments.length > 0 && (
+                  <span className="text-[10px] font-mono text-slate-600 bg-slate-950 px-1.5 py-0.5 rounded">
+                    {attachments.length}
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="text-xs text-amber-400 hover:text-amber-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              >
+                {uploading ? (
+                  <>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+                      <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+                    </svg>
+                    Subiendo...
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Subir archivo
+                  </>
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+
+            {uploadError && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2.5 text-xs text-red-400 mb-3">
+                {uploadError}
+              </div>
+            )}
+
+            {attachments.length === 0 ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-lg p-5 text-center cursor-pointer transition-colors"
+              >
+                <div className="text-2xl mb-1 opacity-40">📎</div>
+                <p className="text-xs text-slate-500">
+                  Arrastra o haz click para subir imágenes y archivos
+                </p>
+                <p className="text-[10px] text-slate-600 mt-0.5">
+                  Máximo 10 MB
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="group bg-slate-950/60 border border-slate-800 rounded-lg overflow-hidden hover:border-slate-700 transition-colors"
+                  >
+                    {isImage(att.type) ? (
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <img
+                          src={att.url}
+                          alt={att.name}
+                          className="w-full max-h-40 object-cover"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : null}
+
+                    <div className="flex items-center gap-2 p-2.5">
+                      {!isImage(att.type) && (
+                        <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center shrink-0">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-slate-500"
+                          >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-xs text-slate-200 truncate hover:text-amber-400 transition-colors"
+                          title={att.name}
+                        >
+                          {att.name}
+                        </a>
+                        <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
+                          <span>{formatFileSize(att.size)}</span>
+                          <span className="text-slate-700">·</span>
+                          <span>{relativeTime(att.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              `¿Eliminar adjunto "${att.name}"?`
+                            )
+                          )
+                            onDeleteAttachment(att.id);
+                        }}
+                        className="text-slate-600 hover:text-red-400 p-1.5 opacity-0 group-hover:opacity-100 transition text-xs shrink-0"
+                        title="Eliminar adjunto"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* SUBTAREAS */}
           <div className="pt-4 border-t border-slate-800 mb-5">
             <div className="flex justify-between items-center mb-2.5">
@@ -421,9 +641,8 @@ export function CardModal({
             </div>
           </div>
 
-          {/* ============ COMENTARIOS (destacado) ============ */}
+          {/* COMENTARIOS */}
           <div className="rounded-xl bg-slate-950/80 border border-slate-800 overflow-hidden">
-            {/* Header */}
             <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-amber-500/15 flex items-center justify-center">
@@ -453,7 +672,6 @@ export function CardModal({
             </div>
 
             <div className="p-3">
-              {/* Lista */}
               {comments.length === 0 ? (
                 <div className="text-center py-6">
                   <div className="text-3xl mb-2 opacity-40">💬</div>
@@ -497,7 +715,6 @@ export function CardModal({
                 </div>
               )}
 
-              {/* Input */}
               <div className="bg-slate-900 border border-slate-800 rounded-lg focus-within:border-amber-500/50 transition-colors">
                 <textarea
                   value={newComment}
@@ -528,7 +745,6 @@ export function CardModal({
               </div>
             </div>
           </div>
-          {/* =============================================== */}
         </div>
 
         <div className="p-3 sm:p-4 border-t border-slate-800 flex flex-wrap gap-2 justify-between items-center shrink-0 bg-slate-900">
@@ -536,7 +752,7 @@ export function CardModal({
             onClick={() => {
               if (
                 window.confirm(
-                  '¿Archivar esta tarjeta? Podrás recuperarla desde el Archivo.'
+                  '¿Archivar esta tarjeta? Podrás recuperarla desde Archivados.'
                 )
               ) {
                 onArchive();

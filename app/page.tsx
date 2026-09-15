@@ -58,6 +58,8 @@ export default function Home() {
   const deleteSubtask = useBoard((s) => s.deleteSubtask);
   const addComment = useBoard((s) => s.addComment);
   const deleteComment = useBoard((s) => s.deleteComment);
+  const addAttachment = useBoard((s) => s.addAttachment);
+  const deleteAttachment = useBoard((s) => s.deleteAttachment);
   const addLabel = useBoard((s) => s.addLabel);
   const addLabelAndAssign = useBoard((s) => s.addLabelAndAssign);
   const deleteLabel = useBoard((s) => s.deleteLabel);
@@ -752,7 +754,6 @@ export default function Home() {
             className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header del menú */}
             <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
@@ -780,7 +781,6 @@ export default function Home() {
             </div>
 
             <div className="max-h-[75vh] overflow-y-auto p-2">
-              {/* Vista */}
               <div className="mb-2">
                 <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
                   Vista
@@ -823,7 +823,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tablero actual */}
               {user && activeBoard && (
                 <div className="mb-2 pt-2 border-t border-slate-800">
                   <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
@@ -855,7 +854,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Herramientas */}
               <div className="mb-2 pt-2 border-t border-slate-800">
                 <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
                   Herramientas
@@ -928,7 +926,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Otros */}
               {activeBoard && (
                 <div className="mb-2 pt-2 border-t border-slate-800">
                   <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
@@ -956,7 +953,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Cuenta */}
               {user && (
                 <div className="pt-2 border-t border-slate-800">
                   <button
@@ -1386,6 +1382,10 @@ export default function Home() {
           onAddComment={(text) => addComment(editingCard.id, text)}
           onDeleteComment={(commentId) =>
             deleteComment(editingCard.id, commentId)
+          }
+          onAddAttachment={(att) => addAttachment(editingCard.id, att)}
+          onDeleteAttachment={(attId) =>
+            deleteAttachment(editingCard.id, attId)
           }
         />
       )}
