@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ProfileStats } from '@/types';
 import { levelFromXP } from '@/lib/xp';
-import { getCosmetic } from '@/lib/cosmetics';
+import { getCosmetic, COSMETICS } from '@/lib/cosmetics';
+
+const ADMIN_EMAILS = ['archinime77@gmail.com'];
 
 const INITIAL: ProfileStats = {
   xp: 0,
@@ -38,6 +40,10 @@ const COSMETICS_BY_LEVEL: Record<number, string[]> = {
 
 interface ProfileStore {
   profile: ProfileStats;
+  isAdmin: boolean;
+
+  setAdmin: (email: string | null | undefined) => void;
+
   addXP: (xp: number, ap: number) => { leveledUp: boolean; oldLevel: number; newLevel: number };
   buy: (cosmeticId: string) => boolean;
   equip: (cosmeticId: string) => void;
@@ -50,9 +56,34 @@ export const useProfile = create<ProfileStore>()(
   persist(
     (set, get) => ({
       profile: INITIAL,
+      isAdmin: false,
+
+      setAdmin: (email) => {
+        const isAdmin = !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+
+        if (!isAdmin) {
+          set({ isAdmin: false });
+          return;
+        }
+
+        // Al ser admin, desbloqueamos TODOS los cosméticos automáticamente
+        const allOwned: Record<string, number> = {};
+        const now = Date.now();
+        for (const c of COSMETICS) {
+          allOwned[c.id] = now;
+        }
+
+        set((state) => ({
+          isAdmin: true,
+          profile: {
+            ...state.profile,
+            owned: { ...state.profile.owned, ...allOwned },
+          },
+        }));
+      },
 
       addXP: (xpGain, apGain) => {
-        const { profile } = get();
+        const { profile, isAdmin } = get();
         const oldLevel = profile.level;
         const nextXP = profile.xp + xpGain;
         const newLevel = levelFromXP(nextXP);
@@ -71,7 +102,8 @@ export const useProfile = create<ProfileStore>()(
           profile: {
             ...profile,
             xp: nextXP,
-            ap: profile.ap + apGain,
+            // Si es admin, no sumamos AP (lo mostramos como ∞)
+            ap: isAdmin ? profile.ap : profile.ap + apGain,
             level: newLevel,
             owned,
           },
@@ -82,8 +114,23 @@ export const useProfile = create<ProfileStore>()(
 
       buy: (cosmeticId) => {
         const cosmetic = getCosmetic(cosmeticId);
-        if (!cosmetic || !cosmetic.price) return false;
-        const { profile } = get();
+        if (!cosmetic) return false;
+        const { profile, isAdmin } = get();
+
+        // Si es admin, siempre permite comprar sin restar AP
+        if (isAdmin) {
+          if (!profile.owned[cosmeticId]) {
+            set({
+              profile: {
+                ...profile,
+                owned: { ...profile.owned, [cosmeticId]: Date.now() },
+              },
+            });
+          }
+          return true;
+        }
+
+        if (!cosmetic.price) return false;
         if (profile.owned[cosmeticId]) return false;
         if (profile.ap < cosmetic.price) return false;
 
@@ -100,8 +147,8 @@ export const useProfile = create<ProfileStore>()(
       equip: (cosmeticId) => {
         const cosmetic = getCosmetic(cosmeticId);
         if (!cosmetic) return;
-        const { profile } = get();
-        if (!profile.owned[cosmeticId]) return;
+        const { profile, isAdmin } = get();
+        if (!isAdmin && !profile.owned[cosmeticId]) return;
 
         set({
           profile: {
@@ -137,7 +184,7 @@ export const useProfile = create<ProfileStore>()(
         });
       },
 
-      reset: () => set({ profile: INITIAL }),
+      reset: () => set({ profile: INITIAL, isAdmin: false }),
     }),
     { name: 'architablox-profile', version: 1 }
   )

@@ -19,6 +19,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { useBoard } from '@/store/board';
+import { useProfile } from '@/store/profile';
 import type { Card as CardType, CardTemplate, Priority } from '@/types';
 import { RARITY_LABEL } from '@/lib/gamification';
 import { dayKey } from '@/lib/dateUtils';
@@ -111,7 +112,7 @@ export default function Home() {
     boardRoles,
   } = useSyncBoards();
 
-  // 🔥 Sistema de XP
+  // Sistema de XP
   useXP();
 
   const [mounted, setMounted] = useState(false);
@@ -160,12 +161,8 @@ export default function Home() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Si pasamos a PC, salir de vistas solo-móvil
   useEffect(() => {
-    if (
-      !isMobile &&
-      (view === 'search' || view === 'archive')
-    ) {
+    if (!isMobile && (view === 'search' || view === 'archive')) {
       setView('board');
     }
   }, [isMobile, view]);
@@ -188,7 +185,7 @@ export default function Home() {
     }
   }, [view]);
 
-  // Cargar miembros
+  // Cargar miembros del tablero activo
   useEffect(() => {
     if (!activeBoardId || !userId) return;
 
@@ -213,28 +210,41 @@ export default function Home() {
       });
   }, [activeBoardId, userId]);
 
-  // Auth
+  // ============ AUTENTICACIÓN + ADMIN ============
   useEffect(() => {
     const supabase = createClient();
+    const { setAdmin } = useProfile.getState();
 
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUser({ email: data.user.email ?? '' });
+      if (data.user) {
+        setUser({ email: data.user.email ?? '' });
+        setAdmin(data.user.email);
+      } else {
+        setAdmin(null);
+      }
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        if (session?.user) setUser({ email: session.user.email ?? '' });
-        else setUser(null);
+        if (session?.user) {
+          setUser({ email: session.user.email ?? '' });
+          setAdmin(session.user.email);
+        } else {
+          setUser(null);
+          setAdmin(null);
+        }
       }
     );
 
     return () => sub.subscription.unsubscribe();
   }, []);
+  // ================================================
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    useProfile.getState().setAdmin(null);
     window.location.reload();
   };
 
@@ -294,7 +304,7 @@ export default function Home() {
     container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
   };
 
-  // Atajos
+  // ============ ATAJOS DE TECLADO ============
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -378,7 +388,9 @@ export default function Home() {
     showCommand,
     view,
   ]);
+  // ==========================================
 
+  // ============ BÚSQUEDA ============
   const cardMatchesQuery = useCallback(
     (c: CardType, q: string): boolean => {
       if (!q) return true;
@@ -386,6 +398,7 @@ export default function Home() {
 
       if (c.title.toLowerCase().includes(lowerQ)) return true;
       if ((c.description ?? '').toLowerCase().includes(lowerQ)) return true;
+
       if (c.comments?.some((cm) => cm.text.toLowerCase().includes(lowerQ))) {
         return true;
       }
@@ -536,6 +549,7 @@ export default function Home() {
     }
   };
 
+  // ============ MENCIONES EN COMENTARIOS ============
   const handleAddCommentWithMentions = async (text: string) => {
     if (!editingCard || !activeBoard || !user) {
       if (editingCard) addComment(editingCard.id, text);
@@ -580,6 +594,7 @@ export default function Home() {
       }
     }
   };
+  // ====================================================
 
   const handleCreateAndAssignLabel = (name: string, color: string) => {
     if (editingId) {

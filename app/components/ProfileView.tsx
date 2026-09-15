@@ -64,6 +64,7 @@ export function ProfileView({
   const profile = useProfile((s) => s.profile);
   const equip = useProfile((s) => s.equip);
   const buy = useProfile((s) => s.buy);
+  const isAdmin = useProfile((s) => s.isAdmin);
   const stats = useStats((s) => s.stats);
   const { toast } = useToast();
 
@@ -180,6 +181,11 @@ export function ProfileView({
                     <div className="text-base font-bold text-slate-100 truncate">
                       {userEmail.split('@')[0]}
                     </div>
+                    {isAdmin && (
+                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/40 rounded px-1.5 py-0.5 shrink-0">
+                        ADMIN
+                      </span>
+                    )}
                   </div>
                   {equippedTitle?.value && (
                     <div className={`text-xs font-medium ${tier.color}`}>
@@ -196,16 +202,21 @@ export function ProfileView({
               <XPBarFull />
 
               {/* Moneda AP */}
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800">
                   <span className="text-amber-400 text-sm">◆</span>
                   <span className="text-sm font-bold font-mono tabular-nums text-slate-100">
-                    {profile.ap.toLocaleString()}
+                    {isAdmin ? '∞' : profile.ap.toLocaleString()}
                   </span>
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                     AP
                   </span>
                 </div>
+                {isAdmin && (
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/40 rounded px-2 py-1">
+                    ∞ AP · Compras ilimitadas
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -318,22 +329,30 @@ export function ProfileView({
       {tab === 'shop' && (
         <>
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-amber-400 text-lg">◆</span>
               <span className="text-lg font-bold font-mono tabular-nums text-slate-100">
-                {profile.ap.toLocaleString()}
+                {isAdmin ? '∞' : profile.ap.toLocaleString()}
               </span>
               <span className="text-xs text-slate-500 uppercase tracking-wider">
                 Archi Points
               </span>
+              {isAdmin && (
+                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/40 rounded px-2 py-0.5">
+                  MODO ADMIN · Compras ilimitadas
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Gana AP cerrando tarjetas, comentando y manteniendo rachas.
+              {isAdmin
+                ? 'Como admin, puedes desbloquear cualquier cosmético sin gastar AP.'
+                : 'Gana AP cerrando tarjetas, comentando y manteniendo rachas.'}
             </p>
           </div>
 
           <ShopGrid
             profile={profile}
+            isAdmin={isAdmin}
             onBuy={(id) => {
               const cosmetic = getCosmetic(id);
               if (!cosmetic) return;
@@ -352,6 +371,7 @@ export function ProfileView({
       {tab === 'collection' && (
         <CollectionGrid
           profile={profile}
+          isAdmin={isAdmin}
           onEquip={(id) => {
             const cosmetic = getCosmetic(id);
             if (!cosmetic) return;
@@ -410,9 +430,11 @@ function XPBarFull() {
 
 function ShopGrid({
   profile,
+  isAdmin,
   onBuy,
 }: {
   profile: any;
+  isAdmin: boolean;
   onBuy: (id: string) => void;
 }) {
   const [cat, setCat] = useState<CosmeticCategory | 'all'>('all');
@@ -458,7 +480,7 @@ function ShopGrid({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {items.map((c) => {
             const rar = RARITY_COLORS[c.rarity];
-            const affordable = profile.ap >= (c.price ?? 0);
+            const affordable = isAdmin || profile.ap >= (c.price ?? 0);
             return (
               <button
                 key={c.id}
@@ -480,10 +502,18 @@ function ShopGrid({
                   {c.name}
                 </div>
                 <div className="flex items-center gap-1 mt-1.5">
-                  <span className="text-amber-400 text-xs">◆</span>
-                  <span className={`text-xs font-mono tabular-nums ${affordable ? 'text-slate-200' : 'text-red-400'}`}>
-                    {c.price}
-                  </span>
+                  {isAdmin ? (
+                    <span className="text-[10px] font-bold text-amber-400">
+                      ∞ GRATIS
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-amber-400 text-xs">◆</span>
+                      <span className={`text-xs font-mono tabular-nums ${affordable ? 'text-slate-200' : 'text-red-400'}`}>
+                        {c.price}
+                      </span>
+                    </>
+                  )}
                 </div>
               </button>
             );
@@ -496,9 +526,11 @@ function ShopGrid({
 
 function CollectionGrid({
   profile,
+  isAdmin,
   onEquip,
 }: {
   profile: any;
+  isAdmin: boolean;
   onEquip: (id: string) => void;
 }) {
   const [cat, setCat] = useState<CosmeticCategory | 'all'>('all');
