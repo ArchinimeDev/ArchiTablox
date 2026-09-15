@@ -57,14 +57,16 @@ interface Props {
 }
 
 function renderCommentText(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  const urlSplit = /(https?:\/\/[^\s]+)/g;
+  const urlTest = /^https?:\/\/[^\s]+$/;
+  const parts = text.split(urlSplit);
 
-  return parts.map((part, i) => {
-    if (urlRegex.test(part)) {
+  return parts.flatMap((part, i) => {
+    // Si es URL → link dorado
+    if (urlTest.test(part)) {
       return (
         <a
-          key={i}
+          key={`url-${i}`}
           href={part}
           target="_blank"
           rel="noopener noreferrer"
@@ -75,7 +77,26 @@ function renderCommentText(text: string) {
         </a>
       );
     }
-    return <span key={i}>{part}</span>;
+
+    // Dentro de este fragmento, detectar menciones @usuario
+    const mentionSplit = /(@[A-Za-z0-9._-]+)/g;
+    const mentionTest = /^@[A-Za-z0-9._-]+$/;
+    const subParts = part.split(mentionSplit);
+
+    return subParts.map((sub, j) => {
+      // Si es mención → chip dorado
+      if (mentionTest.test(sub)) {
+        return (
+          <span
+            key={`mention-${i}-${j}`}
+            className="inline-flex items-center align-baseline bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded px-1 py-0.5 font-medium mx-0.5"
+          >
+            {sub}
+          </span>
+        );
+      }
+      return <span key={`text-${i}-${j}`}>{sub}</span>;
+    });
   });
 }
 
