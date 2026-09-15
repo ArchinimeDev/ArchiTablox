@@ -113,3 +113,101 @@ export interface Board {
   templates: CardTemplate[];
   activity: ActivityEvent[];
 }
+
+// ============================================================
+// GAMIFICACIÓN · STATS
+// ============================================================
+
+export interface UserStats {
+  reputation: number;
+  cardsCreated: number;
+  cardsCompleted: number;
+  commentsAdded: number;
+  attachmentsAdded: number;
+  templatesApplied: number;
+  templatesCreated: number;
+  labelsCreated: number;
+  boardsCreated: number;
+  subtasksCompleted: number;
+  actionsByDay: Record<string, number>;
+  streak: {
+    current: number;
+    longest: number;
+    lastActiveDate: string;
+  };
+  achievements: string[];
+  firstUseAt: number;
+  lastActiveAt: number;
+}
+
+export type UserLevel =
+  | 'novato'
+  | 'aprendiz'
+  | 'constructor'
+  | 'arquitecto'
+  | 'maestro';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  tier: 'bronze' | 'silver' | 'gold';
+}
+
+export type TrackAction =
+  | 'card_created'
+  | 'card_created_full'
+  | 'card_completed'
+  | 'card_moved'
+  | 'comment_added'
+  | 'attachment_added'
+  | 'template_applied'
+  | 'template_created'
+  | 'label_created'
+  | 'board_created'
+  | 'subtask_completed';
+
+// ============================================================
+// PERFIL · XP · COSMÉTICOS
+// ============================================================
+
+export type CosmeticRarity =
+  | 'common'
+  | 'rare'
+  | 'epic'
+  | 'legendary'
+  | 'mythic';
+
+export type CosmeticCategory = 'avatar' | 'frame' | 'background' | 'title';
+
+export interface Cosmetic {
+  id: string;
+  name: string;
+  description?: string;
+  category: CosmeticCategory;
+  rarity: CosmeticRarity;
+  price?: number;
+  unlockedByLevel?: number;
+  unlockedByAchievement?: string;
+  value: string;
+  preview?: string;
+  free?: boolean;
+}
+
+export interface EquippedCosmetics {
+  avatar?: string;
+  frame?: string;
+  background?: string;
+  title?: string;
+}
+
+export interface ProfileStats {
+  xp: number;
+  ap: number;
+  level: number;
+  owned: Record<string, number>;
+  equipped: EquippedCosmetics;
+}
+
+export type ProfileTab = 'profile' | 'shop' | 'collection';

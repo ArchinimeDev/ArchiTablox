@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import type { Board } from '@/types';
 import { ThemeToggle } from './ThemeToggle';
+import { LevelBadge } from './LevelBadge';
+
+type ViewId = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
 
 interface Props {
   boards: Board[];
@@ -13,7 +16,7 @@ interface Props {
   view: 'board' | 'calendar';
   archivedCount: number;
   onSwitchBoard: (id: string) => void;
-  onSetView: (v: 'board' | 'calendar' | 'search' | 'archive' | 'profile') => void;
+  onSetView: (v: ViewId) => void;
   onCreateBoard: (name: string) => void;
   onOpenShare: () => void;
   onOpenArchive: () => void;
@@ -232,6 +235,37 @@ export function Sidebar({
                   {archivedCount > 99 ? '99+' : archivedCount}
                 </span>
               )}
+            </button>
+          </nav>
+        </div>
+
+        {/* Perfil / Tienda */}
+        <div className="mb-3">
+          <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+            Cuenta
+          </div>
+          <nav className="space-y-0.5">
+            <button
+              onClick={() => onSetView('profile')}
+              className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="flex-1 text-left">Mi perfil</span>
+              {user && <LevelBadge size="sm" />}
+            </button>
+            <button
+              onClick={() => onSetView('shop')}
+              className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 4.6A2 2 0 0 0 6.5 21H20" />
+                <circle cx="9" cy="20" r="1" />
+                <circle cx="19" cy="20" r="1" />
+              </svg>
+              <span className="flex-1 text-left">Tienda</span>
             </button>
           </nav>
         </div>

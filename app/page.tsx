@@ -24,6 +24,7 @@ import { RARITY_LABEL } from '@/lib/gamification';
 import { dayKey } from '@/lib/dateUtils';
 import { createClient } from '@/utils/supabase/client';
 import { useSyncBoards } from './hooks/useSyncBoards';
+import { useXP } from '@/hooks/useXP';
 
 // Componentes
 import { ColumnView } from './components/ColumnView';
@@ -48,11 +49,11 @@ import { MobileHeader } from './components/MobileHeader';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { MobileSearchView } from './components/MobileSearchView';
 import { MobileArchiveView } from './components/MobileArchiveView';
-import { MobileProfileView } from './components/MobileProfileView';
+import { ProfileView } from './components/ProfileView';
 
 import { sendEmail } from '@/lib/notify';
 
-type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile';
+type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
 
 interface Member {
   user_id: string;
@@ -110,6 +111,9 @@ export default function Home() {
     boardRoles,
   } = useSyncBoards();
 
+  // 🔥 Sistema de XP
+  useXP();
+
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [view, setView] = useState<ViewMode>('board');
@@ -156,11 +160,11 @@ export default function Home() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Si pasamos a PC y estamos en una vista solo-móvil, volvemos a board
+  // Si pasamos a PC, salir de vistas solo-móvil
   useEffect(() => {
     if (
       !isMobile &&
-      (view === 'search' || view === 'archive' || view === 'profile')
+      (view === 'search' || view === 'archive')
     ) {
       setView('board');
     }
@@ -173,20 +177,18 @@ export default function Home() {
     setEditingId(null);
   }, [activeBoardId]);
 
-  // Restaurar vista guardada
   useEffect(() => {
     const saved = localStorage.getItem('kanban-view');
     if (saved === 'calendar' || saved === 'board') setView(saved);
   }, []);
 
-  // Guardar solo board/calendar (no las vistas solo-móvil)
   useEffect(() => {
     if (view === 'board' || view === 'calendar') {
       localStorage.setItem('kanban-view', view);
     }
   }, [view]);
 
-  // Cargar miembros del tablero activo
+  // Cargar miembros
   useEffect(() => {
     if (!activeBoardId || !userId) return;
 
@@ -211,7 +213,7 @@ export default function Home() {
       });
   }, [activeBoardId, userId]);
 
-  // Autenticación
+  // Auth
   useEffect(() => {
     const supabase = createClient();
 
@@ -292,7 +294,7 @@ export default function Home() {
     container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
   };
 
-  // Atajos de teclado
+  // Atajos
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -377,7 +379,6 @@ export default function Home() {
     view,
   ]);
 
-  // Búsqueda
   const cardMatchesQuery = useCallback(
     (c: CardType, q: string): boolean => {
       if (!q) return true;
@@ -385,7 +386,6 @@ export default function Home() {
 
       if (c.title.toLowerCase().includes(lowerQ)) return true;
       if ((c.description ?? '').toLowerCase().includes(lowerQ)) return true;
-
       if (c.comments?.some((cm) => cm.text.toLowerCase().includes(lowerQ))) {
         return true;
       }
@@ -450,7 +450,6 @@ export default function Home() {
     });
   }, [cards, search, filterPriority, filterLabel, cardMatchesQuery]);
 
-  // Vista móvil de búsqueda: misma búsqueda, sin filtros de prioridad
   const mobileSearchResults = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return [];
@@ -537,7 +536,6 @@ export default function Home() {
     }
   };
 
-  // Menciones en comentarios
   const handleAddCommentWithMentions = async (text: string) => {
     if (!editingCard || !activeBoard || !user) {
       if (editingCard) addComment(editingCard.id, text);
@@ -622,12 +620,11 @@ export default function Home() {
   const hasActiveFilters =
     !!search || filterPriority !== 'all' || filterLabel !== 'all';
 
-  // Mostrar la toolbar del tablero solo en board
   const showBoardToolbar = view === 'board';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
-      {/* ============ SIDEBAR (PC) ============ */}
+      {/* SIDEBAR */}
       <Sidebar
         boards={boards}
         activeBoardId={activeBoardId}
@@ -647,7 +644,6 @@ export default function Home() {
         onBoardOpened={handleBoardOpened}
       />
 
-      {/* ============ CONTENIDO PRINCIPAL ============ */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
         {/* Topbar (PC) */}
         <Topbar
@@ -661,7 +657,7 @@ export default function Home() {
           onInviteAccepted={handleInviteAccepted}
         />
 
-        {/* Header (Móvil) */}
+        {/* MobileHeader */}
         <MobileHeader
           board={activeBoard}
           user={user}
@@ -677,9 +673,9 @@ export default function Home() {
           />
         )}
 
-        {/* ============ MAIN ============ */}
+        {/* MAIN */}
         <main className="flex-1 px-3 sm:px-4 lg:px-6 py-4 pb-24 lg:pb-6">
-          {/* ============ TOOLBAR (solo en board) ============ */}
+          {/* Toolbar (board) */}
           {showBoardToolbar && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 min-w-[240px] focus-within:border-slate-700 transition-colors">
@@ -708,7 +704,7 @@ export default function Home() {
                 <button
                   onClick={handleAdd}
                   disabled={!newTitle.trim()}
-                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold text-xs rounded px-3 py-1.5 transition-colors shrink-0"
+                  className="interactive bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold text-xs rounded px-3 py-1.5 shrink-0"
                 >
                   Añadir
                 </button>
@@ -736,7 +732,7 @@ export default function Home() {
                 {search && (
                   <button
                     onClick={() => setSearch('')}
-                    className="text-slate-500 hover:text-slate-200 p-0.5 shrink-0"
+                    className="interactive text-slate-500 hover:text-slate-200 p-0.5 shrink-0"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 6 6 18M6 6l12 12" />
@@ -783,7 +779,7 @@ export default function Home() {
                       setFilterPriority('all');
                       setFilterLabel('all');
                     }}
-                    className="text-xs text-slate-500 hover:text-red-400 px-3 h-10 rounded-lg border border-slate-800 hover:border-red-900 transition-colors"
+                    className="interactive text-xs text-slate-500 hover:text-red-400 px-3 h-10 rounded-lg border border-slate-800 hover:border-red-900"
                   >
                     Limpiar
                   </button>
@@ -792,7 +788,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* ============ VISTA TABLERO ============ */}
+          {/* VISTA TABLERO */}
           {view === 'board' && (
             <>
               {columns.length > 0 && (
@@ -868,7 +864,7 @@ export default function Home() {
                         <div className="flex gap-2">
                           <button
                             onClick={handleAddColumn}
-                            className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 py-1.5 text-xs transition-colors"
+                            className="interactive flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 py-1.5 text-xs"
                           >
                             Crear
                           </button>
@@ -877,7 +873,7 @@ export default function Home() {
                               setAddingColumn(false);
                               setNewColumnName('');
                             }}
-                            className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                            className="interactive px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
                           >
                             Cancelar
                           </button>
@@ -886,7 +882,7 @@ export default function Home() {
                     ) : (
                       <button
                         onClick={() => setAddingColumn(true)}
-                        className="w-full bg-transparent hover:bg-slate-900 border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-4 text-sm text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center gap-2 h-[60px]"
+                        className="interactive w-full bg-transparent hover:bg-slate-900 border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-4 text-sm text-slate-500 hover:text-slate-300 flex items-center justify-center gap-2 h-[60px]"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 5v14M5 12h14" />
@@ -913,7 +909,7 @@ export default function Home() {
             </>
           )}
 
-          {/* ============ VISTA CALENDARIO ============ */}
+          {/* VISTA CALENDARIO */}
           {view === 'calendar' && (
             <CalendarView
               cards={filteredCards}
@@ -923,7 +919,7 @@ export default function Home() {
             />
           )}
 
-          {/* ============ VISTA BUSCAR (MÓVIL) ============ */}
+          {/* VISTA BUSCAR (MÓVIL) */}
           {view === 'search' && (
             <MobileSearchView
               search={search}
@@ -934,7 +930,7 @@ export default function Home() {
             />
           )}
 
-          {/* ============ VISTA ARCHIVADOS (MÓVIL) ============ */}
+          {/* VISTA ARCHIVADOS (MÓVIL) */}
           {view === 'archive' && (
             <MobileArchiveView
               archivedCards={archivedCards}
@@ -947,11 +943,12 @@ export default function Home() {
             />
           )}
 
-          {/* ============ VISTA PERFIL (MÓVIL) ============ */}
-          {view === 'profile' && (
-            <MobileProfileView
+          {/* VISTA PERFIL / TIENDA */}
+          {(view === 'profile' || view === 'shop') && (
+            <ProfileView
               user={user}
               boardsCount={boards.length}
+              initialTab={view === 'shop' ? 'shop' : 'profile'}
               onOpenDrawer={() => setShowMobileMenu(true)}
               onOpenShare={() => setShowShare(true)}
               onOpenShortcuts={() => setShowShortcuts(true)}
@@ -970,14 +967,14 @@ export default function Home() {
         />
       </div>
 
-      {/* ============ DRAWER MÓVIL ============ */}
+      {/* DRAWER MÓVIL */}
       {isMobile && showMobileMenu && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 px-3 overflow-y-auto pb-6"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 px-3 overflow-y-auto pb-6 animate-fade-in"
           onClick={() => setShowMobileMenu(false)}
         >
           <div
-            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
@@ -998,7 +995,7 @@ export default function Home() {
               </div>
               <button
                 onClick={() => setShowMobileMenu(false)}
-                className="text-slate-500 hover:text-slate-200 p-1.5 rounded transition-colors shrink-0"
+                className="interactive text-slate-500 hover:text-slate-200 p-1.5 rounded"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 6 6 18M6 6l12 12" />
@@ -1022,7 +1019,7 @@ export default function Home() {
                         handleBoardOpened(b.id);
                         setShowMobileMenu(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm transition-colors ${
+                      className={`interactive w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm ${
                         isActive
                           ? 'bg-slate-800 text-slate-100 font-medium'
                           : 'text-slate-300 hover:bg-slate-800/60'
@@ -1055,7 +1052,7 @@ export default function Home() {
                     const name = prompt('Nombre del nuevo tablero:');
                     if (name?.trim()) createBoard(name.trim());
                   }}
-                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                  className="interactive w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-amber-400 hover:bg-amber-500/10"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 5v14M5 12h14" />
@@ -1064,13 +1061,65 @@ export default function Home() {
                 </button>
               </div>
 
+              <div className="pt-2 border-t border-slate-800 mb-2">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  Vista
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 px-1">
+                  <button
+                    onClick={() => {
+                      setView('board');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`interactive flex items-center gap-2 px-3 h-10 rounded-lg text-sm ${
+                      view === 'board'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="18" rx="1" />
+                      <rect x="14" y="3" width="7" height="18" rx="1" />
+                    </svg>
+                    Tablero
+                  </button>
+                  <button
+                    onClick={() => {
+                      setView('calendar');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`interactive flex items-center gap-2 px-3 h-10 rounded-lg text-sm ${
+                      view === 'calendar'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4M8 2v4M3 10h18" />
+                    </svg>
+                    Calendario
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-800">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  Tema
+                </div>
+                <ThemeToggle
+                  variant="menu"
+                  onToggle={() => setShowMobileMenu(false)}
+                />
+              </div>
+
               <div className="pt-2 border-t border-slate-800">
                 <button
                   onClick={() => {
                     setShowMobileMenu(false);
                     setShowShortcuts(true);
                   }}
-                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  className="interactive w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-slate-300 hover:bg-slate-800"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                     <circle cx="12" cy="12" r="10" />
@@ -1084,7 +1133,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ============ MODALES ============ */}
+      {/* MODALES */}
       {editingCard && (
         <CardModal
           card={editingCard}
@@ -1179,11 +1228,11 @@ export default function Home() {
 
       {showShortcuts && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setShowShortcuts(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-5 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-5 shadow-2xl animate-fade-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
@@ -1192,7 +1241,7 @@ export default function Home() {
               </h2>
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="text-slate-500 hover:text-slate-200 p-1 rounded transition-colors"
+                className="interactive text-slate-500 hover:text-slate-200 p-1 rounded"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 6 6 18M6 6l12 12" />
