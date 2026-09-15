@@ -29,29 +29,30 @@ import { useSyncBoards } from './hooks/useSyncBoards';
 import { ColumnView } from './components/ColumnView';
 import { CardItem } from './components/CardItem';
 import { CardModal } from './components/CardModal';
-import { DataMenu } from './components/DataMenu';
 import { ArchiveModal } from './components/ArchiveModal';
 import { CalendarView } from './components/CalendarView';
 import { DayModal } from './components/DayModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { TemplatesMenu } from './components/TemplatesMenu';
 import { TemplateModal } from './components/TemplateModal';
-import { ActivityPanel } from './components/ActivityPanel';
 import { ShareModal } from './components/ShareModal';
 import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { ThemeToggle } from './components/ThemeToggle';
 import { CommandPalette } from './components/CommandPalette';
 
-// NUEVOS: layout rediseñado
+// Layout
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { MobileHeader } from './components/MobileHeader';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { MobileSearchView } from './components/MobileSearchView';
+import { MobileArchiveView } from './components/MobileArchiveView';
+import { MobileProfileView } from './components/MobileProfileView';
 
 import { sendEmail } from '@/lib/notify';
 
-type ViewMode = 'board' | 'calendar';
+type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile';
 
 interface Member {
   user_id: string;
@@ -92,11 +93,7 @@ export default function Home() {
   const updateColumn = useBoard((s) => s.updateColumn);
   const deleteColumn = useBoard((s) => s.deleteColumn);
   const createBoard = useBoard((s) => s.createBoard);
-  const renameBoard = useBoard((s) => s.renameBoard);
-  const duplicateBoard = useBoard((s) => s.duplicateBoard);
-  const deleteBoard = useBoard((s) => s.deleteBoard);
   const switchBoard = useBoard((s) => s.switchBoard);
-  const resetActiveBoard = useBoard((s) => s.resetActiveBoard);
   const importData = useBoard((s) => s.importData);
   const updateNotificationSettings = useBoard(
     (s) => s.updateNotificationSettings
@@ -105,7 +102,6 @@ export default function Home() {
   const updateTemplate = useBoard((s) => s.updateTemplate);
   const deleteTemplate = useBoard((s) => s.deleteTemplate);
   const createCardFromTemplate = useBoard((s) => s.createCardFromTemplate);
-  const clearActivity = useBoard((s) => s.clearActivity);
 
   const {
     status: syncStatus,
@@ -128,7 +124,6 @@ export default function Home() {
   const [addingColumn, setAddingColumn] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<number | null>(null);
   const [activeColumnIdx, setActiveColumnIdx] = useState(0);
@@ -161,6 +156,16 @@ export default function Home() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // Si pasamos a PC y estamos en una vista solo-móvil, volvemos a board
+  useEffect(() => {
+    if (
+      !isMobile &&
+      (view === 'search' || view === 'archive' || view === 'profile')
+    ) {
+      setView('board');
+    }
+  }, [isMobile, view]);
+
   useEffect(() => {
     setSearch('');
     setFilterPriority('all');
@@ -168,13 +173,17 @@ export default function Home() {
     setEditingId(null);
   }, [activeBoardId]);
 
+  // Restaurar vista guardada
   useEffect(() => {
     const saved = localStorage.getItem('kanban-view');
     if (saved === 'calendar' || saved === 'board') setView(saved);
   }, []);
 
+  // Guardar solo board/calendar (no las vistas solo-móvil)
   useEffect(() => {
-    localStorage.setItem('kanban-view', view);
+    if (view === 'board' || view === 'calendar') {
+      localStorage.setItem('kanban-view', view);
+    }
   }, [view]);
 
   // Cargar miembros del tablero activo
@@ -202,7 +211,7 @@ export default function Home() {
       });
   }, [activeBoardId, userId]);
 
-  // ============ AUTENTICACIÓN ============
+  // Autenticación
   useEffect(() => {
     const supabase = createClient();
 
@@ -226,18 +235,14 @@ export default function Home() {
     setUser(null);
     window.location.reload();
   };
-  // ======================================
 
   const handleInviteAccepted = async () => {
     const previousIds = new Set(boards.map((b) => b.id));
-
     await reloadBoards();
-
     const after = useBoard.getState().boards;
     const added = after
       .filter((b) => !previousIds.has(b.id))
       .map((b) => b.id);
-
     if (added.length > 0) {
       setNewBoardIds((prev) => [...new Set([...prev, ...added])]);
     }
@@ -287,7 +292,7 @@ export default function Home() {
     container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
   };
 
-  // ============ ATAJOS DE TECLADO ============
+  // Atajos de teclado
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -297,7 +302,6 @@ export default function Home() {
         target.tagName === 'SELECT' ||
         target.isContentEditable;
 
-      // Ctrl+K / Cmd+K → abrir paleta de comandos
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setShowCommand((s) => !s);
@@ -336,7 +340,7 @@ export default function Home() {
 
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
-        newCardInputRef.current?.focus();
+        if (view === 'board') newCardInputRef.current?.focus();
         return;
       }
       if (e.key === '/') {
@@ -370,49 +374,27 @@ export default function Home() {
     filterPriority,
     filterLabel,
     showCommand,
+    view,
   ]);
-  // ==========================================
 
-  // ============ BÚSQUEDA MEJORADA ============
+  // Búsqueda
   const cardMatchesQuery = useCallback(
     (c: CardType, q: string): boolean => {
       if (!q) return true;
       const lowerQ = q.toLowerCase();
 
-      // Título
       if (c.title.toLowerCase().includes(lowerQ)) return true;
-
-      // Descripción
       if ((c.description ?? '').toLowerCase().includes(lowerQ)) return true;
 
-      // Comentarios
-      if (
-        c.comments?.some((cm) =>
-          cm.text.toLowerCase().includes(lowerQ)
-        )
-      ) {
+      if (c.comments?.some((cm) => cm.text.toLowerCase().includes(lowerQ))) {
         return true;
       }
-
-      // Adjuntos (nombre del archivo)
-      if (
-        c.attachments?.some((a) =>
-          a.name.toLowerCase().includes(lowerQ)
-        )
-      ) {
+      if (c.attachments?.some((a) => a.name.toLowerCase().includes(lowerQ))) {
         return true;
       }
-
-      // Subtareas
-      if (
-        c.subtasks?.some((s) =>
-          s.title.toLowerCase().includes(lowerQ)
-        )
-      ) {
+      if (c.subtasks?.some((s) => s.title.toLowerCase().includes(lowerQ))) {
         return true;
       }
-
-      // Etiquetas (nombre)
       if (
         c.labelIds?.some((id) => {
           const label = labels.find((l) => l.id === id);
@@ -421,8 +403,6 @@ export default function Home() {
       ) {
         return true;
       }
-
-      // Asignados (email)
       const assignees = c.assigneeIds ?? [];
       if (
         assignees.some((uid) => {
@@ -432,12 +412,10 @@ export default function Home() {
       ) {
         return true;
       }
-
       return false;
     },
     [labels, members]
   );
-  // ============================================
 
   const filteredByColumn = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -471,6 +449,16 @@ export default function Home() {
       return true;
     });
   }, [cards, search, filterPriority, filterLabel, cardMatchesQuery]);
+
+  // Vista móvil de búsqueda: misma búsqueda, sin filtros de prioridad
+  const mobileSearchResults = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return [];
+    return Object.values(cards).filter((c) => {
+      if (c.archived) return false;
+      return cardMatchesQuery(c, q);
+    });
+  }, [cards, search, cardMatchesQuery]);
 
   const archivedCards = useMemo(
     () => Object.values(cards).filter((c) => c.archived),
@@ -549,17 +537,15 @@ export default function Home() {
     }
   };
 
-  // ============ MENCIONES EN COMENTARIOS ============
+  // Menciones en comentarios
   const handleAddCommentWithMentions = async (text: string) => {
     if (!editingCard || !activeBoard || !user) {
       if (editingCard) addComment(editingCard.id, text);
       return;
     }
 
-    // 1. Guardar el comentario localmente (instantáneo)
     addComment(editingCard.id, text);
 
-    // 2. Extraer menciones del texto
     const mentionRegex = /@([A-Za-z0-9._-]+)/g;
     const matches = text.match(mentionRegex) || [];
     const mentionedLocals = new Set(
@@ -568,18 +554,15 @@ export default function Home() {
 
     if (mentionedLocals.size === 0) return;
 
-    // 3. Buscar miembros del tablero que coincidan con las menciones
     const mentionedUsers = members.filter((m) => {
       const local = m.email.split('@')[0].toLowerCase();
       return mentionedLocals.has(local);
     });
 
-    // 4. Excluirse a sí mismo (no te notifiques a ti mismo)
     const toNotify = mentionedUsers.filter((m) => m.email !== user.email);
 
     if (toNotify.length === 0) return;
 
-    // 5. Enviar emails (en paralelo, sin bloquear el UI)
     const preview = text.length > 120 ? text.slice(0, 120) + '…' : text;
 
     for (const m of toNotify) {
@@ -599,7 +582,6 @@ export default function Home() {
       }
     }
   };
-  // ====================================================
 
   const handleCreateAndAssignLabel = (name: string, color: string) => {
     if (editingId) {
@@ -640,6 +622,9 @@ export default function Home() {
   const hasActiveFilters =
     !!search || filterPriority !== 'all' || filterLabel !== 'all';
 
+  // Mostrar la toolbar del tablero solo en board
+  const showBoardToolbar = view === 'board';
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       {/* ============ SIDEBAR (PC) ============ */}
@@ -649,7 +634,7 @@ export default function Home() {
         boardRoles={boardRoles}
         newBoardIds={newBoardIds}
         user={user}
-        view={view}
+        view={view === 'calendar' ? 'calendar' : 'board'}
         archivedCount={archivedCards.length}
         onSwitchBoard={switchBoard}
         onSetView={setView}
@@ -694,10 +679,9 @@ export default function Home() {
 
         {/* ============ MAIN ============ */}
         <main className="flex-1 px-3 sm:px-4 lg:px-6 py-4 pb-24 lg:pb-6">
-          {/* ============ TOOLBAR ============ */}
-          {view === 'board' && (
+          {/* ============ TOOLBAR (solo en board) ============ */}
+          {showBoardToolbar && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              {/* Input nueva tarjeta */}
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 min-w-[240px] focus-within:border-slate-700 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
                   <path d="M12 5v14M5 12h14" />
@@ -730,7 +714,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Plantillas */}
               <TemplatesMenu
                 templates={templates}
                 onApply={handleApplyTemplate}
@@ -738,7 +721,6 @@ export default function Home() {
                 onCreate={() => setEditingTemplate(null)}
               />
 
-              {/* Buscador local */}
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 sm:flex-initial sm:w-56 min-w-[180px] focus-within:border-slate-700 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
                   <circle cx="11" cy="11" r="8" />
@@ -763,7 +745,6 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Filtros */}
               <div className="flex items-center gap-2 shrink-0">
                 <select
                   value={filterPriority}
@@ -814,7 +795,6 @@ export default function Home() {
           {/* ============ VISTA TABLERO ============ */}
           {view === 'board' && (
             <>
-              {/* Tabs de columnas (móvil) */}
               {columns.length > 0 && (
                 <div className="lg:hidden -mx-3 px-3 mb-3">
                   <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
@@ -868,7 +848,6 @@ export default function Home() {
                     />
                   ))}
 
-                  {/* Añadir columna */}
                   <div className="w-[320px] shrink-0 snap-start">
                     {addingColumn ? (
                       <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
@@ -943,6 +922,42 @@ export default function Home() {
               onOpenDay={(ts) => setDayModalDate(ts)}
             />
           )}
+
+          {/* ============ VISTA BUSCAR (MÓVIL) ============ */}
+          {view === 'search' && (
+            <MobileSearchView
+              search={search}
+              onSearchChange={setSearch}
+              cards={mobileSearchResults}
+              labels={labels}
+              onOpenCard={(id) => setEditingId(id)}
+            />
+          )}
+
+          {/* ============ VISTA ARCHIVADOS (MÓVIL) ============ */}
+          {view === 'archive' && (
+            <MobileArchiveView
+              archivedCards={archivedCards}
+              columns={columns}
+              labels={labels}
+              onOpenCard={(id) => setEditingId(id)}
+              onRestore={restoreCard}
+              onDelete={deleteCard}
+              onEmpty={emptyArchive}
+            />
+          )}
+
+          {/* ============ VISTA PERFIL (MÓVIL) ============ */}
+          {view === 'profile' && (
+            <MobileProfileView
+              user={user}
+              boardsCount={boards.length}
+              onOpenDrawer={() => setShowMobileMenu(true)}
+              onOpenShare={() => setShowShare(true)}
+              onOpenShortcuts={() => setShowShortcuts(true)}
+              onLogout={handleLogout}
+            />
+          )}
         </main>
 
         {/* Bottom nav (Móvil) */}
@@ -952,12 +967,6 @@ export default function Home() {
           user={user}
           archivedCount={archivedCards.length}
           onSetView={setView}
-          onOpenNewCard={() => {
-            newCardInputRef.current?.focus();
-          }}
-          onOpenCommand={() => setShowCommand(true)}
-          onOpenArchive={() => setShowArchive(true)}
-          onOpenProfile={() => setShowMobileMenu(true)}
         />
       </div>
 
@@ -998,7 +1007,6 @@ export default function Home() {
             </div>
 
             <div className="max-h-[75vh] overflow-y-auto p-2">
-              {/* Tableros */}
               <div className="mb-2">
                 <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
                   Tableros
@@ -1056,80 +1064,7 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Vista */}
-              <div className="pt-2 border-t border-slate-800 mb-2">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Vista
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 px-1">
-                  <button
-                    onClick={() => {
-                      setView('board');
-                      setShowMobileMenu(false);
-                    }}
-                    className={`flex items-center gap-2 px-3 h-10 rounded-lg text-sm transition-colors ${
-                      view === 'board'
-                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
-                    }`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="7" height="18" rx="1" />
-                      <rect x="14" y="3" width="7" height="18" rx="1" />
-                    </svg>
-                    Tablero
-                  </button>
-                  <button
-                    onClick={() => {
-                      setView('calendar');
-                      setShowMobileMenu(false);
-                    }}
-                    className={`flex items-center gap-2 px-3 h-10 rounded-lg text-sm transition-colors ${
-                      view === 'calendar'
-                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
-                    }`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4M8 2v4M3 10h18" />
-                    </svg>
-                    Calendario
-                  </button>
-                </div>
-              </div>
-
-              {/* Tema */}
               <div className="pt-2 border-t border-slate-800">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Tema
-                </div>
-                <ThemeToggle
-                  variant="menu"
-                  onToggle={() => setShowMobileMenu(false)}
-                />
-              </div>
-
-              {/* Otros */}
-              <div className="pt-2 border-t border-slate-800">
-                <button
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    setShowArchive(true);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                    <rect x="2" y="3" width="20" height="5" rx="1" />
-                    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-                  </svg>
-                  <span className="flex-1 text-left">Archivados</span>
-                  {archivedCards.length > 0 && (
-                    <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full">
-                      {archivedCards.length}
-                    </span>
-                  )}
-                </button>
                 <button
                   onClick={() => {
                     setShowMobileMenu(false);
@@ -1144,26 +1079,6 @@ export default function Home() {
                   <span className="flex-1 text-left">Atajos de teclado</span>
                 </button>
               </div>
-
-              {/* Cerrar sesión */}
-              {user && (
-                <div className="pt-2 border-t border-slate-800 mt-2">
-                  <button
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      handleLogout();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    <span className="flex-1 text-left">Cerrar sesión</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
