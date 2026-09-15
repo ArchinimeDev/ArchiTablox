@@ -1,0 +1,282 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import type { ActivityEvent } from '@/types';
+
+interface Props {
+  activity: ActivityEvent[];
+  onOpenCard: (id: string) => void;
+  onClear: () => void;
+}
+
+function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 30) return 'ahora';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `hace ${min} min`;
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `hace ${days} d`;
+  return new Date(ts).toLocaleDateString('es', {
+    day: '2-digit',
+    month: 'short',
+  });
+}
+
+function describeEvent(e: ActivityEvent): {
+  icon: string;
+  color: string;
+  text: React.ReactNode;
+} {
+  switch (e.type) {
+    case 'card_created':
+      return {
+        icon: '✨',
+        color: 'text-emerald-400',
+        text: (
+          <>
+            creó <b className="text-slate-200">{e.cardTitle}</b>
+            {e.toColumn && (
+              <>
+                {' '}en <span className="text-slate-400">{e.toColumn}</span>
+              </>
+            )}
+          </>
+        ),
+      };
+    case 'card_moved':
+      return {
+        icon: '→',
+        color: 'text-blue-400',
+        text: (
+          <>
+            movió <b className="text-slate-200">{e.cardTitle}</b>
+            {e.fromColumn && e.toColumn && (
+              <>
+                {' '}
+                de <span className="text-slate-400">{e.fromColumn}</span> a{' '}
+                <span className="text-slate-400">{e.toColumn}</span>
+              </>
+            )}
+          </>
+        ),
+      };
+    case 'card_completed':
+      return {
+        icon: '✅',
+        color: 'text-emerald-400',
+        text: (
+          <>
+            completó <b className="text-slate-200">{e.cardTitle}</b>
+            {e.toColumn && (
+              <>
+                {' '}en <span className="text-slate-400">{e.toColumn}</span>
+              </>
+            )}
+          </>
+        ),
+      };
+    case 'card_uncompleted':
+      return {
+        icon: '↩️',
+        color: 'text-amber-400',
+        text: (
+          <>
+            reabrió <b className="text-slate-200">{e.cardTitle}</b>
+            {e.fromColumn && (
+              <>
+                {' '}desde <span className="text-slate-400">{e.fromColumn}</span>
+              </>
+            )}
+          </>
+        ),
+      };
+    case 'card_archived':
+      return {
+        icon: '📥',
+        color: 'text-slate-400',
+        text: (
+          <>
+            archivó <b className="text-slate-200">{e.cardTitle}</b>
+          </>
+        ),
+      };
+    case 'card_restored':
+      return {
+        icon: '♻️',
+        color: 'text-emerald-400',
+        text: (
+          <>
+            restauró <b className="text-slate-200">{e.cardTitle}</b>
+          </>
+        ),
+      };
+    case 'card_deleted':
+      return {
+        icon: '🗑️',
+        color: 'text-red-400',
+        text: (
+          <>
+            eliminó <b className="text-slate-200">{e.cardTitle}</b>
+          </>
+        ),
+      };
+    case 'card_renamed':
+      return {
+        icon: '✎',
+        color: 'text-amber-400',
+        text: (
+          <>
+            renombró{' '}
+            <span className="text-slate-500 line-through">{e.extra}</span> a{' '}
+            <b className="text-slate-200">{e.cardTitle}</b>
+          </>
+        ),
+      };
+    case 'comment_added':
+      return {
+        icon: '💬',
+        color: 'text-amber-400',
+        text: (
+          <>
+            comentó en <b className="text-slate-200">{e.cardTitle}</b>
+            {e.extra && (
+              <div className="text-[11px] text-slate-500 mt-0.5 italic truncate">
+                "{e.extra}"
+              </div>
+            )}
+          </>
+        ),
+      };
+    case 'template_applied':
+      return {
+        icon: '📄',
+        color: 'text-fuchsia-400',
+        text: (
+          <>
+            creó <b className="text-slate-200">{e.cardTitle}</b> desde{' '}
+            <span className="text-slate-400">{e.extra}</span>
+          </>
+        ),
+      };
+    default:
+      return { icon: '•', color: 'text-slate-500', text: <span>actividad</span> };
+  }
+}
+
+export function ActivityPanel({ activity, onOpenCard, onClear }: Props) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', onClick);
+      return () => document.removeEventListener('mousedown', onClick);
+    }
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+        title="Historial de actividad"
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-slate-500"
+        >
+          <path d="M12 8v4l3 3" />
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+        <span className="hidden sm:inline text-slate-400">Actividad</span>
+        {activity.length > 0 && (
+          <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-1.5 rounded">
+            {activity.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-1.5 w-[calc(100vw-1.5rem)] max-w-96 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden">
+          <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+            <div className="text-xs font-medium text-slate-100 flex items-center gap-2">
+              <span>Historial</span>
+              {activity.length > 0 && (
+                <span className="text-slate-500">({activity.length})</span>
+              )}
+            </div>
+            {activity.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm('¿Vaciar el historial?')) onClear();
+                }}
+                className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+              >
+                Vaciar
+              </button>
+            )}
+          </div>
+
+          {activity.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              <div className="text-3xl mb-2 opacity-40">📜</div>
+              Sin actividad todavía.
+              <br />
+              Los cambios en tus tarjetas aparecerán aquí.
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto p-1.5">
+              {activity.map((e) => {
+                const { icon, color, text } = describeEvent(e);
+                const clickable = !!e.cardId;
+                return (
+                  <div
+                    key={e.id}
+                    onClick={() => {
+                      if (clickable && e.cardId) {
+                        onOpenCard(e.cardId);
+                        setOpen(false);
+                      }
+                    }}
+                    className={`flex gap-2.5 px-2 py-2 rounded-md transition-colors ${
+                      clickable ? 'cursor-pointer hover:bg-slate-800' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-md bg-slate-950 border border-slate-800 flex items-center justify-center text-xs shrink-0 ${color}`}
+                    >
+                      {icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-slate-400 leading-snug">
+                        {text}
+                      </div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">
+                        {relativeTime(e.timestamp)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
