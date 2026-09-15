@@ -103,6 +103,7 @@ export default function Home() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<number | null>(null);
   const [activeColumnIdx, setActiveColumnIdx] = useState(0);
   const [editingTemplate, setEditingTemplate] = useState<
@@ -248,6 +249,7 @@ export default function Home() {
         if (showShortcuts) return setShowShortcuts(false);
         if (showArchive) return setShowArchive(false);
         if (showShare) return setShowShare(false);
+        if (showMobileMenu) return setShowMobileMenu(false);
         if (dayModalDate !== null) return setDayModalDate(null);
         if (editingTemplate !== undefined)
           return setEditingTemplate(undefined);
@@ -299,6 +301,7 @@ export default function Home() {
     showShortcuts,
     showArchive,
     showShare,
+    showMobileMenu,
     dayModalDate,
     editingTemplate,
     addingColumn,
@@ -561,7 +564,7 @@ export default function Home() {
                 <button
                   onClick={() => setShowArchive(true)}
                   className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors shrink-0 relative"
-                  title="Archivo"
+                  title="Archivados"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                     <rect x="2" y="3" width="20" height="5" rx="1" />
@@ -676,12 +679,20 @@ export default function Home() {
       {/* ============ HEADER MÓVIL ============ */}
       {isMobile && (
         <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="px-3 pt-2.5 pb-2 space-y-2">
-            {/* Fila 1: Logo + Tablero + (Notificaciones + Avatar | Entrar) */}
+          <div className="px-3 py-2">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+              <button
+                onClick={() => setShowMobileMenu(true)}
+                className="w-9 h-9 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0 transition-colors relative"
+                title="Menú"
+              >
                 A
-              </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-slate-950 border border-amber-500 flex items-center justify-center">
+                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </button>
 
               <div className="flex-1 min-w-0">
                 <BoardBar
@@ -727,119 +738,246 @@ export default function Home() {
                 </a>
               )}
             </div>
+          </div>
+        </header>
+      )}
 
-            {/* Fila 2: acciones con scroll horizontal y fade */}
-            <div className="relative -mx-3">
-              <div
-                className="flex gap-1.5 overflow-x-auto pl-3 pr-8 pb-0.5"
-                style={{ scrollbarWidth: 'none' }}
+      {/* ============ MENÚ MÓVIL (drawer) ============ */}
+      {isMobile && showMobileMenu && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-3 overflow-y-auto pb-6"
+          onClick={() => setShowMobileMenu(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del menú */}
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+                  A
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-100">
+                    ArchiTablox
+                  </div>
+                  {user && (
+                    <div className="text-[10px] text-slate-500 truncate max-w-[180px]">
+                      {user.email}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="text-slate-500 hover:text-slate-200 p-1.5 rounded transition-colors shrink-0"
               >
-                {/* Vista */}
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-9 shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-[75vh] overflow-y-auto p-2">
+              {/* Vista */}
+              <div className="mb-2">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  Vista
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 px-1">
                   <button
-                    onClick={() => setView('board')}
-                    className={`px-2.5 h-8 rounded-md text-xs flex items-center gap-1.5 transition-colors ${
+                    onClick={() => {
+                      setView('board');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`flex items-center gap-2 px-3 h-10 rounded-lg text-sm transition-colors ${
                       view === 'board'
-                        ? 'bg-slate-800 text-slate-100'
-                        : 'text-slate-400'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
                     }`}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="7" height="18" rx="1" />
                       <rect x="14" y="3" width="7" height="18" rx="1" />
                     </svg>
                     Tablero
                   </button>
                   <button
-                    onClick={() => setView('calendar')}
-                    className={`px-2.5 h-8 rounded-md text-xs flex items-center gap-1.5 transition-colors ${
+                    onClick={() => {
+                      setView('calendar');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`flex items-center gap-2 px-3 h-10 rounded-lg text-sm transition-colors ${
                       view === 'calendar'
-                        ? 'bg-slate-800 text-slate-100'
-                        : 'text-slate-400'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
                     }`}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="18" rx="2" />
                       <path d="M16 2v4M8 2v4M3 10h18" />
                     </svg>
                     Calendario
                   </button>
                 </div>
+              </div>
 
-                {user && activeBoard && (
-                  <>
-                    <button
-                      onClick={() => setShowShare(true)}
-                      className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-3 h-9 text-xs flex items-center gap-1.5 shrink-0 text-slate-300 transition-colors"
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                        <polyline points="16 6 12 2 8 6" />
-                        <line x1="12" y1="2" x2="12" y2="15" />
-                      </svg>
-                      Compartir
-                    </button>
-
+              {/* Tablero actual */}
+              {user && activeBoard && (
+                <div className="mb-2 pt-2 border-t border-slate-800">
+                  <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                    Tablero actual
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      setShowShare(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                    <span className="flex-1 text-left">Compartir tablero</span>
+                  </button>
+                  <div className="px-3 pt-1">
                     <MembersAvatars
                       boardId={activeBoard.id}
-                      onOpenShare={() => setShowShare(true)}
+                      onOpenShare={() => {
+                        setShowMobileMenu(false);
+                        setShowShare(true);
+                      }}
                     />
-                  </>
-                )}
+                  </div>
+                </div>
+              )}
 
+              {/* Herramientas */}
+              <div className="mb-2 pt-2 border-t border-slate-800">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  Herramientas
+                </div>
                 <button
-                  onClick={() => setShowArchive(true)}
-                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-3 h-9 text-xs flex items-center gap-1.5 shrink-0 text-slate-300 transition-colors"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setEditingTemplate(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                  <span className="flex-1 text-left">Plantillas</span>
+                  <span className="text-[10px] text-slate-600 font-mono">
+                    {templates.length}
+                  </span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowArchive(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                     <rect x="2" y="3" width="20" height="5" rx="1" />
                     <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
                   </svg>
-                  Archivo
+                  <span className="flex-1 text-left">Archivados</span>
                   {archivedCards.length > 0 && (
-                    <span className="bg-slate-700 text-slate-200 text-[9px] font-mono px-1.5 rounded-full">
+                    <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-1.5 py-0.5 rounded-full">
                       {archivedCards.length}
                     </span>
                   )}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
                 </button>
-
-                <DataMenu
-                  boards={boards}
-                  activeBoardId={activeBoardId}
-                  onImport={importData}
-                />
-
-                {activeBoard && (
-                  <ActivityPanel
-                    activity={activeBoard.activity ?? []}
-                    onOpenCard={(id) => setEditingId(id)}
-                    onClear={clearActivity}
-                  />
-                )}
-
                 <button
-                  onClick={() => setShowShortcuts(true)}
-                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg w-9 h-9 flex items-center justify-center text-xs font-bold shrink-0 text-slate-400 transition-colors"
-                  title="Atajos"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setView('board');
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
-                  ?
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  <span className="flex-1 text-left">Buscar y filtrar</span>
                 </button>
-
-                {user && (
-                  <button
-                    onClick={handleLogout}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-red-900 rounded-lg px-3 h-9 text-xs flex items-center shrink-0 text-slate-500 hover:text-red-400 transition-colors"
-                  >
-                    Salir
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowShortcuts(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+                  </svg>
+                  <span className="flex-1 text-left">Atajos de teclado</span>
+                </button>
               </div>
 
-              {/* Fade a la derecha */}
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
+              {/* Otros */}
+              {activeBoard && (
+                <div className="mb-2 pt-2 border-t border-slate-800">
+                  <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                    Otros
+                  </div>
+                  <div className="px-1 flex gap-1.5">
+                    <div className="flex-1">
+                      <DataMenu
+                        boards={boards}
+                        activeBoardId={activeBoardId}
+                        onImport={importData}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <ActivityPanel
+                        activity={activeBoard.activity ?? []}
+                        onOpenCard={(id) => {
+                          setShowMobileMenu(false);
+                          setEditingId(id);
+                        }}
+                        onClear={clearActivity}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cuenta */}
+              {user && (
+                <div className="pt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span className="flex-1 text-left">Cerrar sesión</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </header>
+        </div>
       )}
 
       {/* Banner de invitaciones pendientes */}
@@ -854,7 +992,6 @@ export default function Home() {
         {/* ============ TOOLBAR ============ */}
         {isMobile ? (
           <div className="mb-3 space-y-2">
-            {/* Fila 1: Nueva tarjeta */}
             {view === 'board' && (
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
@@ -888,7 +1025,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* Fila 2: Buscar + Filtros */}
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
@@ -935,7 +1071,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Panel de filtros */}
             {showFilters && (
               <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-1.5">

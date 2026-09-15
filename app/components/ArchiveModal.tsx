@@ -39,7 +39,7 @@ export function ArchiveModal({
         <div className="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-base font-semibold text-slate-100">
-              Tarjetas archivadas
+              📦 Archivados
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               {sorted.length}{' '}
@@ -51,7 +51,7 @@ export function ArchiveModal({
             className="text-slate-500 hover:text-slate-200 p-1.5 rounded transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18M6 6l12 12"/>
+              <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -171,7 +171,7 @@ export function ArchiveModal({
               if (sorted.length === 0) return;
               if (
                 window.confirm(
-                  `¿Vaciar el archivo? Se eliminarán ${sorted.length} tarjeta(s).`
+                  `¿Vaciar archivados? Se eliminarán ${sorted.length} tarjeta(s).`
                 )
               )
                 onEmpty();
@@ -179,7 +179,7 @@ export function ArchiveModal({
             disabled={sorted.length === 0}
             className="text-xs text-slate-500 hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-500"
           >
-            Vaciar archivo
+            Vaciar archivados
           </button>
           <button
             onClick={onClose}

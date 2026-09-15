@@ -90,7 +90,7 @@ export function BoardBar({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative w-full">
       <button
         onClick={handleToggle}
         className={`bg-slate-900 hover:bg-slate-800 border rounded-lg px-2.5 h-9 text-xs sm:text-sm flex items-center gap-1.5 transition-colors relative w-full ${
@@ -108,7 +108,9 @@ export function BoardBar({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={hasNewBoards ? 'text-red-400 shrink-0' : 'text-slate-500 shrink-0'}
+          className={
+            hasNewBoards ? 'text-red-400 shrink-0' : 'text-slate-500 shrink-0'
+          }
         >
           <rect x="3" y="3" width="7" height="18" rx="1" />
           <rect x="14" y="3" width="7" height="18" rx="1" />
