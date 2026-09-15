@@ -110,10 +110,13 @@ function createInitialBoard(name: string): Board {
 
 function regenerateBoardIds(board: Board): Board {
   const columnIdMap: Record<string, string> = {};
-  const newColumns = board.columns.map((c) => {
+
+  // ✅ FIX: tipamos explícitamente como Column[] para que cardIds sea string[]
+  const newColumns: Column[] = board.columns.map((c) => {
     const newId = uid();
     columnIdMap[c.id] = newId;
-    return { ...c, id: newId, cardIds: [] };
+    const newCol: Column = { ...c, id: newId, cardIds: [] };
+    return newCol;
   });
 
   const newCards: Record<string, Card> = {};
@@ -736,7 +739,7 @@ export const useBoard = create<Store>()(
           withActiveBoard(state, (board) => {
             const doneIndex = board.columns.findIndex((c) => c.isDone);
             const newCol: Column = { id: uid(), title, cardIds: [] };
-            const newCols = [...board.columns];
+            const newCols: Column[] = [...board.columns];
             if (doneIndex >= 0) newCols.splice(doneIndex, 0, newCol);
             else newCols.push(newCol);
             return { ...board, columns: newCols };
@@ -795,7 +798,7 @@ export const useBoard = create<Store>()(
               (c) => c.id === columnId
             );
             if (fromIndex === -1 || fromIndex === toIndex) return board;
-            const newCols = [...board.columns];
+            const newCols: Column[] = [...board.columns];
             const [moved] = newCols.splice(fromIndex, 1);
             newCols.splice(toIndex, 0, moved);
             return { ...board, columns: newCols };
@@ -989,7 +992,7 @@ export const useBoard = create<Store>()(
     }),
     {
       name: 'kanban-quest-storage',
-      version: 18,
+      version: 19,
       migrate: (persisted: any, version) => {
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {

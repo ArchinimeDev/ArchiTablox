@@ -22,7 +22,6 @@ export default function JoinPage() {
     const run = async () => {
       const supabase = createClient();
 
-      // 1. ¿Está logueado?
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
@@ -30,7 +29,6 @@ export default function JoinPage() {
         return;
       }
 
-      // 2. Aceptar el token
       const { data, error } = await supabase.rpc('accept_board_token', {
         p_token: token,
       });
@@ -89,6 +87,10 @@ export default function JoinPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
       <div className="w-full max-w-sm text-center">
+        <div className="w-12 h-12 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-xl mx-auto mb-6">
+          A
+        </div>
+
         <div
           className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
             status === 'loading'

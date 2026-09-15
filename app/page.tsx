@@ -166,12 +166,10 @@ export default function Home() {
   // ======================================
 
   const handleInviteAccepted = async () => {
-    // Guardar los IDs actuales antes de recargar
     const previousIds = new Set(boards.map((b) => b.id));
 
     await reloadBoards();
 
-    // Los tableros que no estaban antes → son nuevos
     const after = useBoard.getState().boards;
     const added = after
       .filter((b) => !previousIds.has(b.id))
@@ -458,11 +456,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200">
       <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
-              K
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          {/* ===== Izquierda: logo + tablero + miembros + compartir ===== */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+              A
             </div>
+
             <BoardBar
               boards={boards}
               activeBoardId={activeBoardId}
@@ -476,45 +476,51 @@ export default function Home() {
               onDuplicate={duplicateBoard}
               onDelete={deleteBoard}
             />
+
             {user && activeBoard && (
-              <MembersAvatars
-                boardId={activeBoard.id}
-                onOpenShare={() => setShowShare(true)}
-              />
-            )}
-            {user && activeBoard && (
-              <button
-                onClick={() => setShowShare(true)}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
-                title="Compartir tablero"
-              >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-slate-500"
+              <>
+                <div className="w-px h-5 bg-slate-800 shrink-0" />
+
+                <MembersAvatars
+                  boardId={activeBoard.id}
+                  onOpenShare={() => setShowShare(true)}
+                />
+
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors h-8 shrink-0"
+                  title="Compartir tablero"
                 >
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <polyline points="16 6 12 2 8 6" />
-                  <line x1="12" y1="2" x2="12" y2="15" />
-                </svg>
-                <span className="hidden sm:inline text-slate-400">
-                  Compartir
-                </span>
-              </button>
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-slate-500"
+                  >
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                  <span className="hidden lg:inline text-slate-400">
+                    Compartir
+                  </span>
+                </button>
+              </>
             )}
           </div>
 
-          <div className="flex items-center gap-1">
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center">
+          {/* ===== Derecha: vistas + herramientas + cuenta ===== */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Selector de vista */}
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8">
               <button
                 onClick={() => setView('board')}
-                className={`px-2 py-1 rounded text-xs flex items-center gap-1.5 transition-colors ${
+                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
                   view === 'board'
                     ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200'
@@ -525,11 +531,11 @@ export default function Home() {
                   <rect x="3" y="3" width="7" height="18" rx="1" />
                   <rect x="14" y="3" width="7" height="18" rx="1" />
                 </svg>
-                <span className="hidden sm:inline">Tablero</span>
+                <span className="hidden xl:inline">Tablero</span>
               </button>
               <button
                 onClick={() => setView('calendar')}
-                className={`px-2 py-1 rounded text-xs flex items-center gap-1.5 transition-colors ${
+                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
                   view === 'calendar'
                     ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200'
@@ -540,52 +546,60 @@ export default function Home() {
                   <rect x="3" y="4" width="18" height="18" rx="2" />
                   <path d="M16 2v4M8 2v4M3 10h18" />
                 </svg>
-                <span className="hidden sm:inline">Calendario</span>
+                <span className="hidden xl:inline">Calendario</span>
               </button>
             </div>
 
-            {activeBoard && (
-              <NotificationsPanel
-                board={activeBoard}
-                onOpenCard={(id) => setEditingId(id)}
-                onUpdateSettings={updateNotificationSettings}
-                onInviteAccepted={handleInviteAccepted}
-              />
-            )}
+            <div className="w-px h-5 bg-slate-800 shrink-0" />
 
-            <button
-              onClick={() => setShowArchive(true)}
-              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
-              title="Archivo"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                <rect x="2" y="3" width="20" height="5" rx="1" />
-                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-              </svg>
-              {archivedCards.length > 0 && (
-                <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-1.5 rounded">
-                  {archivedCards.length}
-                </span>
+            {/* Herramientas */}
+            <div className="flex items-center gap-1.5">
+              {activeBoard && (
+                <NotificationsPanel
+                  board={activeBoard}
+                  onOpenCard={(id) => setEditingId(id)}
+                  onUpdateSettings={updateNotificationSettings}
+                  onInviteAccepted={handleInviteAccepted}
+                />
               )}
-            </button>
 
-            <DataMenu
-              boards={boards}
-              activeBoardId={activeBoardId}
-              onImport={importData}
-            />
+              <button
+                onClick={() => setShowArchive(true)}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center gap-1 transition-colors shrink-0 relative"
+                title="Archivo"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                  <rect x="2" y="3" width="20" height="5" rx="1" />
+                  <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+                </svg>
+                {archivedCards.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-slate-700 text-slate-200 text-[9px] font-mono px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center">
+                    {archivedCards.length > 9 ? '9+' : archivedCards.length}
+                  </span>
+                )}
+              </button>
 
-            {activeBoard && (
-              <ActivityPanel
-                activity={activeBoard.activity ?? []}
-                onOpenCard={(id) => setEditingId(id)}
-                onClear={clearActivity}
+              <DataMenu
+                boards={boards}
+                activeBoardId={activeBoardId}
+                onImport={importData}
               />
-            )}
 
+              {activeBoard && (
+                <ActivityPanel
+                  activity={activeBoard.activity ?? []}
+                  onOpenCard={(id) => setEditingId(id)}
+                  onClear={clearActivity}
+                />
+              )}
+            </div>
+
+            <div className="w-px h-5 bg-slate-800 shrink-0" />
+
+            {/* Sync indicator */}
             {user && (
               <div
-                className="hidden sm:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5"
+                className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8"
                 title={
                   syncStatus === 'synced'
                     ? 'Sincronizado con la nube'
@@ -656,19 +670,20 @@ export default function Home() {
               </div>
             )}
 
+            {/* Cuenta de usuario */}
             {user ? (
-              <div className="flex items-center gap-1">
-                <div className="hidden sm:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                  <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
                     {user.email.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-xs text-slate-400 max-w-[100px] truncate">
+                  <span className="text-xs text-slate-400 max-w-[110px] truncate">
                     {user.email}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 py-1.5 text-xs transition-colors"
+                  className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors"
                   title="Cerrar sesión"
                 >
                   Salir
@@ -677,7 +692,7 @@ export default function Home() {
             ) : (
               <a
                 href="/login"
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-3 h-8 flex items-center text-xs transition-colors shrink-0"
               >
                 Iniciar sesión
               </a>
@@ -685,7 +700,7 @@ export default function Home() {
 
             <button
               onClick={() => setShowShortcuts(true)}
-              className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-7 h-7 flex items-center justify-center transition-colors text-xs font-bold"
+              className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors text-xs font-bold shrink-0"
               title="Atajos (?)"
             >
               ?

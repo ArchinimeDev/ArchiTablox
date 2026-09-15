@@ -68,9 +68,9 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-xl mx-auto mb-3">
-            K
+            A
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Kanban Quest</h1>
+          <h1 className="text-2xl font-bold text-slate-100">ArchiTablox</h1>
           <p className="text-sm text-slate-500 mt-1">
             {mode === 'login'
               ? 'Inicia sesión para continuar'
