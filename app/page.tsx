@@ -89,6 +89,7 @@ export default function Home() {
   } = useSyncBoards();
 
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [view, setView] = useState<ViewMode>('board');
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
@@ -122,6 +123,14 @@ export default function Home() {
   );
 
   useEffect(() => setMounted(true), []);
+
+  // Detección de móvil
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     setSearch('');
@@ -455,126 +464,330 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200">
-      <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          {/* ===== Izquierda: logo + tablero + miembros + compartir ===== */}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
-              A
+      {/* ============ HEADER ESCRITORIO ============ */}
+      {!isMobile && (
+        <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+                A
+              </div>
+
+              <BoardBar
+                boards={boards}
+                activeBoardId={activeBoardId}
+                boardRoles={boardRoles}
+                newBoardIds={newBoardIds}
+                onOpened={() => {}}
+                onBoardOpened={handleBoardOpened}
+                onSwitch={switchBoard}
+                onCreate={createBoard}
+                onRename={renameBoard}
+                onDuplicate={duplicateBoard}
+                onDelete={deleteBoard}
+              />
+
+              {user && activeBoard && (
+                <>
+                  <div className="w-px h-5 bg-slate-800 shrink-0" />
+                  <MembersAvatars
+                    boardId={activeBoard.id}
+                    onOpenShare={() => setShowShare(true)}
+                  />
+                  <button
+                    onClick={() => setShowShare(true)}
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors h-8 shrink-0"
+                    title="Compartir tablero"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                    <span className="hidden lg:inline text-slate-400">
+                      Compartir
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
 
-            <BoardBar
-              boards={boards}
-              activeBoardId={activeBoardId}
-              boardRoles={boardRoles}
-              newBoardIds={newBoardIds}
-              onOpened={() => {}}
-              onBoardOpened={handleBoardOpened}
-              onSwitch={switchBoard}
-              onCreate={createBoard}
-              onRename={renameBoard}
-              onDuplicate={duplicateBoard}
-              onDelete={deleteBoard}
-            />
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8">
+                <button
+                  onClick={() => setView('board')}
+                  className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
+                    view === 'board'
+                      ? 'bg-slate-800 text-slate-100'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Vista tablero (C)"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="18" rx="1" />
+                    <rect x="14" y="3" width="7" height="18" rx="1" />
+                  </svg>
+                  <span className="hidden xl:inline">Tablero</span>
+                </button>
+                <button
+                  onClick={() => setView('calendar')}
+                  className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
+                    view === 'calendar'
+                      ? 'bg-slate-800 text-slate-100'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Vista calendario (C)"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <span className="hidden xl:inline">Calendario</span>
+                </button>
+              </div>
 
-            {user && activeBoard && (
-              <>
-                <div className="w-px h-5 bg-slate-800 shrink-0" />
+              <div className="w-px h-5 bg-slate-800 shrink-0" />
 
-                <MembersAvatars
-                  boardId={activeBoard.id}
-                  onOpenShare={() => setShowShare(true)}
-                />
+              <div className="flex items-center gap-1.5">
+                {activeBoard && (
+                  <NotificationsPanel
+                    board={activeBoard}
+                    onOpenCard={(id) => setEditingId(id)}
+                    onUpdateSettings={updateNotificationSettings}
+                    onInviteAccepted={handleInviteAccepted}
+                  />
+                )}
 
                 <button
-                  onClick={() => setShowShare(true)}
-                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors h-8 shrink-0"
-                  title="Compartir tablero"
+                  onClick={() => setShowArchive(true)}
+                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors shrink-0 relative"
+                  title="Archivo"
                 >
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-slate-500"
-                  >
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                    <polyline points="16 6 12 2 8 6" />
-                    <line x1="12" y1="2" x2="12" y2="15" />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <rect x="2" y="3" width="20" height="5" rx="1" />
+                    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
                   </svg>
-                  <span className="hidden lg:inline text-slate-400">
-                    Compartir
-                  </span>
+                  {archivedCards.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-slate-700 text-slate-200 text-[9px] font-mono px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center">
+                      {archivedCards.length > 9 ? '9+' : archivedCards.length}
+                    </span>
+                  )}
                 </button>
-              </>
-            )}
-          </div>
 
-          {/* ===== Derecha: vistas + herramientas + cuenta ===== */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Selector de vista */}
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8">
+                <DataMenu
+                  boards={boards}
+                  activeBoardId={activeBoardId}
+                  onImport={importData}
+                />
+
+                {activeBoard && (
+                  <ActivityPanel
+                    activity={activeBoard.activity ?? []}
+                    onOpenCard={(id) => setEditingId(id)}
+                    onClear={clearActivity}
+                  />
+                )}
+              </div>
+
+              <div className="w-px h-5 bg-slate-800 shrink-0" />
+
+              {user && (
+                <div
+                  className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8"
+                  title={
+                    syncStatus === 'synced'
+                      ? 'Sincronizado con la nube'
+                      : syncStatus === 'saving'
+                      ? 'Guardando...'
+                      : syncStatus === 'loading'
+                      ? 'Cargando...'
+                      : syncStatus === 'error'
+                      ? 'Error de sincronización'
+                      : ''
+                  }
+                >
+                  {syncStatus === 'saving' || syncStatus === 'loading' ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 animate-spin">
+                      <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+                    </svg>
+                  ) : syncStatus === 'error' ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v4M12 16h.01" />
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  )}
+                  <span className="text-[10px] text-slate-500">
+                    {syncStatus === 'synced'
+                      ? 'Nube'
+                      : syncStatus === 'saving'
+                      ? 'Guardando'
+                      : syncStatus === 'loading'
+                      ? 'Cargando'
+                      : syncStatus === 'error'
+                      ? 'Error'
+                      : ''}
+                  </span>
+                </div>
+              )}
+
+              {user ? (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
+                      {user.email.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs text-slate-400 max-w-[110px] truncate">
+                      {user.email}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors"
+                    title="Cerrar sesión"
+                  >
+                    Salir
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href="/login"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-3 h-8 flex items-center text-xs transition-colors shrink-0"
+                >
+                  Iniciar sesión
+                </a>
+              )}
+
               <button
-                onClick={() => setView('board')}
-                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
-                  view === 'board'
-                    ? 'bg-slate-800 text-slate-100'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                title="Vista tablero (C)"
+                onClick={() => setShowShortcuts(true)}
+                className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors text-xs font-bold shrink-0"
+                title="Atajos (?)"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="18" rx="1" />
-                  <rect x="14" y="3" width="7" height="18" rx="1" />
-                </svg>
-                <span className="hidden xl:inline">Tablero</span>
-              </button>
-              <button
-                onClick={() => setView('calendar')}
-                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
-                  view === 'calendar'
-                    ? 'bg-slate-800 text-slate-100'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                title="Vista calendario (C)"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-                <span className="hidden xl:inline">Calendario</span>
+                ?
               </button>
             </div>
+          </div>
+        </header>
+      )}
 
-            <div className="w-px h-5 bg-slate-800 shrink-0" />
-
-            {/* Herramientas */}
-            <div className="flex items-center gap-1.5">
-              {activeBoard && (
-                <NotificationsPanel
-                  board={activeBoard}
-                  onOpenCard={(id) => setEditingId(id)}
-                  onUpdateSettings={updateNotificationSettings}
-                  onInviteAccepted={handleInviteAccepted}
+      {/* ============ HEADER MÓVIL ============ */}
+      {isMobile && (
+        <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
+          <div className="px-3 py-2">
+            {/* Fila 1: Logo + Tablero + Notificaciones + Avatar */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+                  A
+                </div>
+                <BoardBar
+                  boards={boards}
+                  activeBoardId={activeBoardId}
+                  boardRoles={boardRoles}
+                  newBoardIds={newBoardIds}
+                  onOpened={() => {}}
+                  onBoardOpened={handleBoardOpened}
+                  onSwitch={switchBoard}
+                  onCreate={createBoard}
+                  onRename={renameBoard}
+                  onDuplicate={duplicateBoard}
+                  onDelete={deleteBoard}
                 />
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {activeBoard && (
+                  <NotificationsPanel
+                    board={activeBoard}
+                    onOpenCard={(id) => setEditingId(id)}
+                    onUpdateSettings={updateNotificationSettings}
+                    onInviteAccepted={handleInviteAccepted}
+                  />
+                )}
+
+                {user && (
+                  <div
+                    className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0"
+                    title={user.email}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400">
+                      {user.email.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Fila 2: scroll horizontal con acciones */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3" style={{ scrollbarWidth: 'none' }}>
+              {/* Vista */}
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8 shrink-0">
+                <button
+                  onClick={() => setView('board')}
+                  className={`px-2.5 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
+                    view === 'board'
+                      ? 'bg-slate-800 text-slate-100'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="18" rx="1" />
+                    <rect x="14" y="3" width="7" height="18" rx="1" />
+                  </svg>
+                  <span>Tablero</span>
+                </button>
+                <button
+                  onClick={() => setView('calendar')}
+                  className={`px-2.5 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
+                    view === 'calendar'
+                      ? 'bg-slate-800 text-slate-100'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <span>Calendario</span>
+                </button>
+              </div>
+
+              {user && activeBoard && (
+                <>
+                  <button
+                    onClick={() => setShowShare(true)}
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 shrink-0 text-slate-300"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                    Compartir
+                  </button>
+
+                  <MembersAvatars
+                    boardId={activeBoard.id}
+                    onOpenShare={() => setShowShare(true)}
+                  />
+                </>
               )}
 
               <button
                 onClick={() => setShowArchive(true)}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center gap-1 transition-colors shrink-0 relative"
-                title="Archivo"
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 shrink-0 text-slate-300 relative"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                   <rect x="2" y="3" width="20" height="5" rx="1" />
                   <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
                 </svg>
+                Archivo
                 {archivedCards.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-slate-700 text-slate-200 text-[9px] font-mono px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center">
-                    {archivedCards.length > 9 ? '9+' : archivedCards.length}
+                  <span className="bg-slate-700 text-slate-200 text-[9px] font-mono px-1.5 rounded-full">
+                    {archivedCards.length}
                   </span>
                 )}
               </button>
@@ -592,122 +805,34 @@ export default function Home() {
                   onClear={clearActivity}
                 />
               )}
-            </div>
 
-            <div className="w-px h-5 bg-slate-800 shrink-0" />
-
-            {/* Sync indicator */}
-            {user && (
-              <div
-                className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8"
-                title={
-                  syncStatus === 'synced'
-                    ? 'Sincronizado con la nube'
-                    : syncStatus === 'saving'
-                    ? 'Guardando...'
-                    : syncStatus === 'loading'
-                    ? 'Cargando...'
-                    : syncStatus === 'error'
-                    ? 'Error de sincronización'
-                    : ''
-                }
+              <button
+                onClick={() => setShowShortcuts(true)}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg w-8 h-8 flex items-center justify-center text-xs font-bold shrink-0 text-slate-500"
+                title="Atajos"
               >
-                {syncStatus === 'saving' || syncStatus === 'loading' ? (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-amber-400 animate-spin"
-                  >
-                    <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-                  </svg>
-                ) : syncStatus === 'error' ? (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-red-400"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 8v4M12 16h.01" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-emerald-400"
-                  >
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                )}
-                <span className="text-[10px] text-slate-500">
-                  {syncStatus === 'synced'
-                    ? 'Nube'
-                    : syncStatus === 'saving'
-                    ? 'Guardando'
-                    : syncStatus === 'loading'
-                    ? 'Cargando'
-                    : syncStatus === 'error'
-                    ? 'Error'
-                    : ''}
-                </span>
-              </div>
-            )}
+                ?
+              </button>
 
-            {/* Cuenta de usuario */}
-            {user ? (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
-                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
-                    {user.email.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-xs text-slate-400 max-w-[110px] truncate">
-                    {user.email}
-                  </span>
-                </div>
+              {user ? (
                 <button
                   onClick={handleLogout}
-                  className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors"
-                  title="Cerrar sesión"
+                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs flex items-center shrink-0 text-slate-500 hover:text-red-400 transition-colors"
                 >
                   Salir
                 </button>
-              </div>
-            ) : (
-              <a
-                href="/login"
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-3 h-8 flex items-center text-xs transition-colors shrink-0"
-              >
-                Iniciar sesión
-              </a>
-            )}
-
-            <button
-              onClick={() => setShowShortcuts(true)}
-              className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors text-xs font-bold shrink-0"
-              title="Atajos (?)"
-            >
-              ?
-            </button>
+              ) : (
+                <a
+                  href="/login"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-3 h-8 flex items-center text-xs transition-colors shrink-0"
+                >
+                  Iniciar sesión
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Banner de invitaciones pendientes */}
       {user && (
