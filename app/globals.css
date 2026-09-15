@@ -1,9 +1,47 @@
 @import "tailwindcss";
 
+/* ================================================================
+   TEMA OSCURO (por defecto)
+   ================================================================ */
+
 :root {
   --background: #0a0a0a;
   --foreground: #ededed;
 }
+
+/* ================================================================
+   TEMA CLARO
+   Sobrescribe las variables de color de Tailwind v4.
+   Como Tailwind usa var(--color-*) en todas sus clases (bg-slate-950,
+   text-slate-100, etc.), basta con cambiar las variables aquí y toda
+   la app cambia de color sin tocar ningún componente.
+   ================================================================ */
+
+[data-theme="light"] {
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+
+  /* Invertimos los slate */
+  --color-slate-950: #f8fafc;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ================================================================
+   BASE
+   ================================================================ */
 
 body {
   background: var(--background);
@@ -11,7 +49,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Scrollbar personalizado */
+/* ================================================================
+   SCROLLBAR
+   ================================================================ */
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(71, 85, 105, 0.55) transparent;
@@ -41,7 +82,18 @@ body {
   background: transparent;
 }
 
-/* Mejoras táctiles móvil */
+[data-theme="light"] * {
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.4);
+}
+
+/* ================================================================
+   MEJORAS TÁCTILES MÓVIL
+   ================================================================ */
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -61,4 +113,22 @@ body {
 html,
 body {
   overscroll-behavior-y: none;
+}
+
+.no-select-during-drag {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ================================================================
+   PWA cuando está instalada
+   ================================================================ */
+
+@media all and (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
