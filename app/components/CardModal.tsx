@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import type { Card, Label, Priority, Attachment } from '@/types';
 import { RARITY_LABEL } from '@/lib/gamification';
 import { LABEL_COLORS, hexWithAlpha } from '@/lib/labels';
@@ -141,6 +141,14 @@ export function CardModal({
   const [members, setMembers] = useState<Member[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [mentionMenu, setMentionMenu] = useState<{
+    open: boolean;
+    query: string;
+    startIdx: number;
+    selectedIdx: number;
+  }>({ open: false, query: '', startIdx: -1, selectedIdx: 0 });
+
   const subtasks = card.subtasks ?? [];
   const doneCount = subtasks.filter((s) => s.done).length;
   const total = subtasks.length;
@@ -151,10 +159,22 @@ export function CardModal({
 
   // Cargar miembros del tablero
   useEffect(() => {
+    if (!boardId) return;
+
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        boardId
+      );
+    if (!isUuid) return;
+
     const supabase = createClient();
     supabase
       .rpc('get_board_members', { p_board_id: boardId })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[CardModal]', error.message);
+          return;
+        }
         if (data) setMembers(data as Member[]);
       });
   }, [boardId]);
@@ -213,6 +233,116 @@ export function CardModal({
     onAddComment(t);
     setNewComment('');
   };
+
+  // ============ MENCIONES ============
+  const filteredMembers = useMemo(() => {
+    if (!mentionMenu.open) return [];
+    const q = mentionMenu.query.toLowerCase();
+    return members
+      .filter((m) => {
+        const local = m.email.split('@')[0].toLowerCase();
+        return m.email.toLowerCase().includes(q) || local.includes(q);
+      })
+      .slice(0, 6);
+  }, [mentionMenu.open, mentionMenu.query, members]);
+
+  const detectMention = (text: string, cursorPos: number) => {
+    let i = cursorPos - 1;
+    while (i >= 0) {
+      const ch = text[i];
+      if (ch === '@') {
+        if (i === 0 || /\s/.test(text[i - 1])) {
+          const query = text.slice(i + 1, cursorPos);
+          if (!/\s/.test(query) && query.length <= 30) {
+            return { startIdx: i, query };
+          }
+        }
+        return null;
+      }
+      if (/\s/.test(ch)) return null;
+      if (i < cursorPos - 30) return null;
+      i--;
+    }
+    return null;
+  };
+
+  const handleCommentChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const text = e.target.value;
+    setNewComment(text);
+    const cursor = e.target.selectionStart ?? 0;
+    const mention = detectMention(text, cursor);
+    if (mention) {
+      setMentionMenu({
+        open: true,
+        query: mention.query,
+        startIdx: mention.startIdx,
+        selectedIdx: 0,
+      });
+    } else if (mentionMenu.open) {
+      setMentionMenu((m) => ({ ...m, open: false }));
+    }
+  };
+
+  const insertMention = (memberEmail: string) => {
+    const local = memberEmail.split('@')[0];
+    const before = newComment.slice(0, mentionMenu.startIdx);
+    const after = newComment.slice(
+      mentionMenu.startIdx + mentionMenu.query.length + 1
+    );
+    const inserted = `@${local} `;
+    const next = before + inserted + after;
+    setNewComment(next);
+    setMentionMenu({ open: false, query: '', startIdx: -1, selectedIdx: 0 });
+    setTimeout(() => {
+      const pos = (before + inserted).length;
+      commentTextareaRef.current?.focus();
+      commentTextareaRef.current?.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  const handleCommentKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    if (mentionMenu.open && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionMenu((m) => ({
+          ...m,
+          selectedIdx: Math.min(
+            m.selectedIdx + 1,
+            filteredMembers.length - 1
+          ),
+        }));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionMenu((m) => ({
+          ...m,
+          selectedIdx: Math.max(m.selectedIdx - 1, 0),
+        }));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const m = filteredMembers[mentionMenu.selectedIdx];
+        if (m) insertMention(m.email);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionMenu((m) => ({ ...m, open: false }));
+        return;
+      }
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAddComment();
+    }
+  };
+  // ===================================
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -840,18 +970,58 @@ export function CardModal({
                 </div>
               )}
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg focus-within:border-amber-500/50 transition-colors">
+              <div className="relative bg-slate-900 border border-slate-800 rounded-lg focus-within:border-amber-500/50 transition-colors">
+                {/* Dropdown de menciones */}
+                {mentionMenu.open && filteredMembers.length > 0 && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden z-50">
+                    <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium border-b border-slate-800">
+                      Mencionar a
+                    </div>
+                    {filteredMembers.map((m, idx) => {
+                      const isSelected = idx === mentionMenu.selectedIdx;
+                      const local = m.email.split('@')[0];
+                      return (
+                        <button
+                          key={m.user_id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            insertMention(m.email);
+                          }}
+                          onMouseEnter={() =>
+                            setMentionMenu((prev) => ({
+                              ...prev,
+                              selectedIdx: idx,
+                            }))
+                          }
+                          className={`w-full text-left px-2.5 py-2 flex items-center gap-2 transition-colors ${
+                            isSelected
+                              ? 'bg-slate-800'
+                              : 'hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400 shrink-0">
+                            {m.email.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs text-slate-100 truncate flex-1">
+                            {local}
+                          </span>
+                          <span className="text-[10px] text-slate-500 truncate">
+                            {m.email}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <textarea
+                  ref={commentTextareaRef}
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
+                  onChange={handleCommentChange}
+                  onKeyDown={handleCommentKeyDown}
                   rows={2}
-                  placeholder="Escribe un comentario... (Enter para enviar)"
+                  placeholder="Escribe un comentario... (@ para mencionar)"
                   className="w-full bg-transparent border-0 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none resize-none"
                 />
                 <div className="flex justify-between items-center px-2 py-1.5 border-t border-slate-800">
