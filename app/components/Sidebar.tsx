@@ -13,7 +13,7 @@ interface Props {
   view: 'board' | 'calendar';
   archivedCount: number;
   onSwitchBoard: (id: string) => void;
-  onSetView: (v: 'board' | 'calendar') => void;
+  onSetView: (v: 'board' | 'calendar' | 'search' | 'archive' | 'profile') => void;
   onCreateBoard: (name: string) => void;
   onOpenShare: () => void;
   onOpenArchive: () => void;
@@ -56,7 +56,7 @@ export function Sidebar({
     <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-64 flex-col bg-slate-950 border-r border-slate-800 z-40">
       {/* Logo */}
       <div className="h-14 flex items-center gap-2.5 px-4 border-b border-slate-800 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">
+        <div className="interactive w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0 cursor-pointer">
           A
         </div>
         <span className="text-sm font-bold text-slate-100 truncate">
@@ -66,10 +66,10 @@ export function Sidebar({
 
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto py-3 px-2">
-        {/* Botón buscar */}
+        {/* Buscar */}
         <button
           onClick={onOpenCommand}
-          className="w-full flex items-center gap-2.5 px-3 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-400 hover:text-slate-200 transition-colors mb-3"
+          className="interactive w-full flex items-center gap-2.5 px-3 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 mb-3"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -81,7 +81,7 @@ export function Sidebar({
           </kbd>
         </button>
 
-        {/* Sección Tableros */}
+        {/* Tableros */}
         <div className="mb-3">
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
@@ -89,7 +89,7 @@ export function Sidebar({
             </span>
             <button
               onClick={() => setCreating(true)}
-              className="text-slate-500 hover:text-amber-400 transition-colors p-0.5"
+              className="interactive text-slate-500 hover:text-amber-400 p-0.5 rounded"
               title="Nuevo tablero"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -99,7 +99,7 @@ export function Sidebar({
           </div>
 
           {creating && (
-            <div className="px-1 mb-1.5 flex gap-1">
+            <div className="px-1 mb-1.5 flex gap-1 animate-fade-slide-up">
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -116,7 +116,7 @@ export function Sidebar({
               />
               <button
                 onClick={commitCreate}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded px-2 text-xs transition-colors"
+                className="interactive bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded px-2 text-xs"
               >
                 ✓
               </button>
@@ -133,11 +133,12 @@ export function Sidebar({
               return (
                 <button
                   key={b.id}
+                  data-active={isActive}
                   onClick={() => {
                     onSwitchBoard(b.id);
                     onBoardOpened(b.id);
                   }}
-                  className={`w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs transition-colors ${
+                  className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                     isActive
                       ? 'bg-slate-800 text-slate-100 font-medium'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -159,7 +160,7 @@ export function Sidebar({
                   </svg>
                   <span className="flex-1 text-left truncate">{b.name}</span>
                   {isNew && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 animate-breathe" />
                   )}
                   {!isOwner && role && (
                     <svg
@@ -181,15 +182,16 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Sección Vistas */}
+        {/* Vistas */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
             Vista
           </div>
           <nav className="space-y-0.5">
             <button
+              data-active={view === 'board'}
               onClick={() => onSetView('board')}
-              className={`w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs transition-colors ${
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'board'
                   ? 'bg-slate-800 text-slate-100 font-medium'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -202,8 +204,9 @@ export function Sidebar({
               <span className="flex-1 text-left">Tablero</span>
             </button>
             <button
+              data-active={view === 'calendar'}
               onClick={() => onSetView('calendar')}
-              className={`w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs transition-colors ${
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'calendar'
                   ? 'bg-slate-800 text-slate-100 font-medium'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -217,7 +220,7 @@ export function Sidebar({
             </button>
             <button
               onClick={onOpenArchive}
-              className="w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
+              className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                 <rect x="2" y="3" width="20" height="5" rx="1" />
@@ -238,7 +241,7 @@ export function Sidebar({
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
           onClick={onOpenShare}
-          className="w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors mb-0.5"
+          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
@@ -250,7 +253,7 @@ export function Sidebar({
 
         <button
           onClick={onOpenShortcuts}
-          className="w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors mb-0.5"
+          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
             <circle cx="12" cy="12" r="10" />
@@ -261,7 +264,6 @@ export function Sidebar({
 
         <div className="my-2 border-t border-slate-800" />
 
-        {/* Usuario */}
         {user ? (
           <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-slate-900/60 mb-1">
             <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
@@ -277,7 +279,7 @@ export function Sidebar({
             </div>
             <button
               onClick={onLogout}
-              className="text-slate-500 hover:text-red-400 p-1 rounded transition-colors shrink-0"
+              className="interactive text-slate-500 hover:text-red-400 p-1 rounded shrink-0"
               title="Cerrar sesión"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -290,7 +292,7 @@ export function Sidebar({
         ) : (
           <a
             href="/login"
-            className="w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg h-8 text-xs transition-colors mb-1"
+            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg h-8 text-xs mb-1"
           >
             Iniciar sesión
           </a>

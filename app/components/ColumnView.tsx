@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Card, Column, Label } from '@/types';
@@ -42,8 +42,20 @@ export function ColumnView({
   const [wipDraft, setWipDraft] = useState(
     column.wipLimit ? String(column.wipLimit) : ''
   );
+  const [countBounce, setCountBounce] = useState(false);
+  const prevCount = useRef(column.cardIds.length);
 
   const isFull = !!column.wipLimit && column.cardIds.length >= column.wipLimit;
+
+  // Bounce cuando cambia el contador
+  useEffect(() => {
+    if (prevCount.current !== column.cardIds.length) {
+      setCountBounce(true);
+      const t = setTimeout(() => setCountBounce(false), 300);
+      prevCount.current = column.cardIds.length;
+      return () => clearTimeout(t);
+    }
+  }, [column.cardIds.length]);
 
   const saveTitle = () => {
     const t = titleDraft.trim();
@@ -64,11 +76,12 @@ export function ColumnView({
     <div
       id={`col-${column.id}`}
       className={`
-        rounded-xl p-2.5 w-72 sm:w-72 lg:w-80 shrink-0 border flex flex-col relative
+        rounded-xl p-2.5 w-[85vw] sm:w-[320px] lg:w-[340px] xl:w-[360px] shrink-0
+        border flex flex-col relative
         transition-all duration-200 snap-start
         ${
           isOver
-            ? 'bg-slate-800 border-amber-400 ring-2 ring-amber-400/50'
+            ? 'bg-slate-800/90 border-amber-400/70 ring-2 ring-amber-400/40 shadow-[0_0_40px_-8px_rgba(245,158,11,0.35)]'
             : 'bg-slate-900/70 border-slate-800'
         }
       `}
@@ -87,11 +100,11 @@ export function ColumnView({
               }
             }}
             autoFocus
-            className="flex-1 bg-slate-950 border border-amber-500 rounded px-2 py-0.5 text-sm font-bold focus:outline-none"
+            className="flex-1 bg-slate-950 border border-amber-500 rounded px-2 py-0.5 text-sm font-bold focus:outline-none text-slate-100"
           />
         ) : (
           <h2
-            className="font-bold text-sm cursor-pointer hover:text-amber-400 transition truncate"
+            className="font-bold text-sm cursor-pointer hover:text-amber-400 transition-colors truncate"
             onDoubleClick={() => setEditingTitle(true)}
             title="Doble click para renombrar"
           >
@@ -103,7 +116,8 @@ export function ColumnView({
         <div className="flex items-center gap-1 shrink-0">
           <span
             className={`
-              text-xs px-2 py-0.5 rounded-full font-mono transition
+              text-xs px-2 py-0.5 rounded-full font-mono transition-colors
+              ${countBounce ? 'animate-count-bounce' : ''}
               ${
                 isFull
                   ? 'bg-red-900/60 text-red-300 ring-1 ring-red-500/50'
@@ -119,7 +133,7 @@ export function ColumnView({
             <>
               <button
                 onClick={() => setShowSettings((s) => !s)}
-                className="text-slate-500 hover:text-amber-400 transition text-xs"
+                className="interactive text-slate-500 hover:text-amber-400 transition-colors text-xs"
                 title="Configurar límite WIP"
               >
                 ⚙
@@ -135,7 +149,7 @@ export function ColumnView({
                     return;
                   onDeleteColumn(column.id);
                 }}
-                className="text-slate-500 hover:text-red-400 transition text-xs"
+                className="interactive text-slate-500 hover:text-red-400 transition-colors text-xs"
                 title="Eliminar columna"
               >
                 ✕
@@ -146,7 +160,7 @@ export function ColumnView({
       </div>
 
       {showSettings && (
-        <div className="mb-2 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs">
+        <div className="mb-2 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs animate-scale-in">
           <label className="block text-slate-400 mb-1.5">
             Límite WIP (vacío = sin límite)
           </label>
@@ -157,11 +171,11 @@ export function ColumnView({
               value={wipDraft}
               onChange={(e) => setWipDraft(e.target.value)}
               placeholder="Sin límite"
-              className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-amber-500"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:border-amber-500 text-slate-100"
             />
             <button
               onClick={saveWip}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded transition"
+              className="interactive bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded"
             >
               OK
             </button>
@@ -171,12 +185,26 @@ export function ColumnView({
 
       <div
         ref={setNodeRef}
-        className="flex-1 min-h-[100px] space-y-1.5 overflow-y-auto"
+        className={`
+          flex-1 min-h-[100px] space-y-1.5 overflow-y-auto rounded-lg
+          transition-all duration-200
+          ${isOver ? 'p-1 bg-amber-500/5' : ''}
+        `}
       >
         <SortableContext items={cardOrder} strategy={verticalListSortingStrategy}>
           {cardOrder.length === 0 && (
-            <div className="text-xs text-slate-600 italic py-5 text-center border-2 border-dashed border-slate-800 rounded-lg">
-              {isOver ? 'Suelta aquí' : 'Arrastra tarjetas aquí'}
+            <div
+              className={`
+                text-xs italic py-6 text-center border-2 border-dashed rounded-lg
+                transition-all duration-300
+                ${
+                  isOver
+                    ? 'border-amber-400/60 text-amber-400/80 bg-amber-500/5 animate-breathe'
+                    : 'border-slate-800 text-slate-600'
+                }
+              `}
+            >
+              {isOver ? '✨ Suelta aquí' : 'Arrastra tarjetas aquí'}
             </div>
           )}
 

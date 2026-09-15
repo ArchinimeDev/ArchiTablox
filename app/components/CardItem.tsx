@@ -75,8 +75,8 @@ export function CardItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
+    transition: transition,
+    opacity: isDragging ? 0.35 : 1,
     touchAction: 'manipulation' as const,
   };
 
@@ -118,22 +118,22 @@ export function CardItem({
       }}
       className={`
         group relative bg-slate-900 border border-slate-800 rounded-lg overflow-hidden
-        cursor-grab active:cursor-grabbing select-none touch-manipulation
-        transition-colors duration-150
-        hover:border-slate-700
-        ${isOverlay ? 'shadow-xl border-slate-600 ring-1 ring-slate-600' : ''}
+        drag-cursor select-none touch-manipulation
+        ${isOverlay
+          ? 'shadow-2xl border-slate-600 ring-2 ring-amber-500/30 scale-[1.03] rotate-[0.5deg]'
+          : 'hover-lift hover:border-slate-700'
+        }
+        ${isDragging ? 'cursor-grabbing' : ''}
       `}
     >
       {/* Portada */}
-      {coverStyle && (
-        <div className="h-16 w-full" style={coverStyle} />
-      )}
+      {coverStyle && <div className="h-16 w-full" style={coverStyle} />}
 
       <div className="p-2.5">
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${RARITY_DOT[card.priority]}`}
+              className={`w-1.5 h-1.5 rounded-full ${RARITY_DOT[card.priority]} group-hover:animate-breathe`}
               title={`Prioridad ${RARITY_LABEL[card.priority]}`}
             />
             <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
@@ -149,7 +149,7 @@ export function CardItem({
                 e.stopPropagation();
                 onOpen(card.id);
               }}
-              className="text-slate-500 hover:text-slate-200 p-1 rounded transition-colors md:opacity-0 md:group-hover:opacity-100"
+              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md md:opacity-0 md:group-hover:opacity-100"
               title="Editar"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,7 +163,7 @@ export function CardItem({
                 e.stopPropagation();
                 onArchive(card.id);
               }}
-              className="text-slate-500 hover:text-slate-200 p-1 rounded transition-colors md:opacity-0 md:group-hover:opacity-100"
+              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md md:opacity-0 md:group-hover:opacity-100"
               title="Archivar"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -180,7 +180,7 @@ export function CardItem({
             {cardLabels.map((label) => (
               <span
                 key={label.id}
-                className="text-[10px] px-1.5 py-0.5 rounded font-medium border"
+                className="text-[10px] px-1.5 py-0.5 rounded font-medium border transition-transform hover:scale-105"
                 style={{
                   backgroundColor: hexWithAlpha(label.color, 0.12),
                   color: label.color,
@@ -227,16 +227,7 @@ export function CardItem({
                   className="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 px-1.5 py-0.5 rounded-md font-semibold"
                   title={`${commentCount} comentario${commentCount === 1 ? '' : 's'}`}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   <span className="font-mono text-[10px] leading-none">
@@ -250,16 +241,7 @@ export function CardItem({
                   className="flex items-center gap-1 bg-blue-500/15 border border-blue-500/40 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold"
                   title={`${attachmentCount} adjunto${attachmentCount === 1 ? '' : 's'}`}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
                   <span className="font-mono text-[10px] leading-none">
@@ -269,11 +251,14 @@ export function CardItem({
               )}
 
               {assignees.length > 0 && (
-                <div className="flex -space-x-1" title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}>
+                <div
+                  className="flex -space-x-1"
+                  title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}
+                >
                   {assignees.slice(0, 3).map((m) => (
                     <div
                       key={m.user_id}
-                      className={`w-4 h-4 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white ring-2 ring-slate-900`}
+                      className={`w-4 h-4 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10`}
                       title={m.email}
                     >
                       {m.email.charAt(0).toUpperCase()}

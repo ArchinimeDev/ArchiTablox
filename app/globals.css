@@ -21,6 +21,9 @@
   --color-slate-800: #e2e8f0;
   --color-slate-900: #ffffff;
   --color-slate-950: #f8fafc;
+
+  --accent: #f59e0b;
+  --accent-rgb: 245, 158, 11;
 }
 
 [data-theme="dark"] {
@@ -117,6 +120,10 @@
    BASE
    ================================================================ */
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   height: 100%;
@@ -132,12 +139,40 @@ body {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   overscroll-behavior-y: none;
+
+  /* Transition global en cambio de tema */
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 code,
 kbd,
 pre {
   font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* ================================================================
+   SELECTION + FOCUS
+   ================================================================ */
+
+::selection {
+  background: rgba(var(--accent-rgb), 0.35);
+  color: inherit;
+}
+
+/* Focus ring global en ámbar (sobreescribe el azul del navegador) */
+*:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.65);
+  outline-offset: 2px;
+  border-radius: 6px;
+  transition: outline-offset 120ms ease-out;
+}
+
+/* Inputs tienen su propio focus, quitamos el outline para que no duplique */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
 }
 
 /* ================================================================
@@ -163,6 +198,7 @@ pre {
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
+  transition: background-color 200ms ease;
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -176,9 +212,205 @@ pre {
 }
 
 /* ================================================================
-   UTILIDADES
+   KEYFRAMES REUTILIZABLES
    ================================================================ */
 
+/* Shake: para errores o WIP limit alcanzado */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+.animate-shake {
+  animation: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Breathe: pulsación lenta para drop zones */
+@keyframes breathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-breathe {
+  animation: breathe 1.6s ease-in-out infinite;
+}
+
+/* Shimmer: skeleton loading */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.06) 0%,
+    rgba(148, 163, 184, 0.15) 50%,
+    rgba(148, 163, 184, 0.06) 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Fade in inicial */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 300ms ease-out both;
+}
+
+/* Fade + slide up (para modales que entran) */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Scale in (para paletas y popovers) */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+/* Slide in from right (toasts) */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Settle: cuando una tarjeta aterriza después de drag */
+@keyframes settle {
+  0% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.animate-settle {
+  animation: settle 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Bounce suave para contadores que cambian */
+@keyframes countBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.animate-count-bounce {
+  animation: countBounce 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ================================================================
+   UTILIDADES DE INTERACCIÓN
+   ================================================================ */
+
+/* Botón base: hover sube 1px + active se comprime */
+.interactive {
+  transition:
+    transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+/* Card hover: elevación más marcada */
+.hover-lift {
+  transition:
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 24px -12px rgba(0, 0, 0, 0.5),
+    0 4px 8px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Slide indicator: para items de sidebar */
+.nav-item {
+  position: relative;
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+  transform: translateY(-50%);
+  transition: height 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-item[data-active="true"]::before {
+  height: 60%;
+}
+
+.nav-item:hover {
+  transform: translateX(1px);
+}
+
+/* Drag cursor */
+.drag-cursor {
+  cursor: grab;
+}
+.drag-cursor:active {
+  cursor: grabbing;
+}
+
+/* No scrollbar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -187,6 +419,7 @@ pre {
   scrollbar-width: none;
 }
 
+/* No select durante drag */
 .no-select-during-drag {
   user-select: none;
   -webkit-user-select: none;
@@ -207,5 +440,20 @@ pre {
   body {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ================================================================
+   RESPETO POR REDUCED MOTION
+   ================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
