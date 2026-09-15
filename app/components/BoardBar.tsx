@@ -38,7 +38,8 @@ export function BoardBar({
   const ref = useRef<HTMLDivElement>(null);
 
   const activeBoard = boards.find((b) => b.id === activeBoardId);
-  const hasNewBoards = newBoardIds.length > 0;
+  const safeNewBoardIds = newBoardIds ?? [];
+  const hasNewBoards = safeNewBoardIds.length > 0;
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -154,7 +155,7 @@ export function BoardBar({
               const role = boardRoles[b.id];
               const isOwner = role === 'owner';
               const isShared = role && role !== 'owner';
-              const isNew = newBoardIds.includes(b.id);
+              const isNew = safeNewBoardIds.includes(b.id);
 
               return (
                 <div

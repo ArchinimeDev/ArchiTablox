@@ -76,7 +76,6 @@ export function WelcomeInvitesBanner({ userId, onAccepted }: Props) {
       <div className="bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/30 rounded-xl p-4 shadow-lg shadow-amber-500/5">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-            {/* 🆕 Icono de personas (compartir) */}
             <svg
               width="20"
               height="20"
@@ -117,42 +116,46 @@ export function WelcomeInvitesBanner({ userId, onAccepted }: Props) {
               </button>
             </div>
             <div className="space-y-2 mt-3">
-              {invites.map((inv) => (
-                <div
-                  key={inv.invite_id}
-                  className="flex flex-wrap items-center gap-3 bg-slate-950/60 rounded-lg p-3 border border-slate-800/80"
-                >
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-sm shrink-0 font-bold text-amber-400">
-                    {inv.inviter_email.charAt(0).toUpperCase()}
+              {invites.map((inv) => {
+                const inviterEmail = inv.inviter_email ?? 'Alguien';
+                const boardName = inv.board_name ?? 'un tablero';
+                return (
+                  <div
+                    key={inv.invite_id}
+                    className="flex flex-wrap items-center gap-3 bg-slate-950/60 rounded-lg p-3 border border-slate-800/80"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-sm shrink-0 font-bold text-amber-400">
+                      {inviterEmail.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-200 leading-snug">
+                        <b className="text-slate-100">{inviterEmail}</b> te ha
+                        invitado a{' '}
+                        <b className="text-amber-400">{boardName}</b>
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        Rol: {ROLE_LABEL[inv.invite_role] ?? inv.invite_role}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleAccept(inv.invite_id)}
+                        disabled={processing === inv.invite_id}
+                        className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded px-3 py-1.5 text-xs transition-colors"
+                      >
+                        {processing === inv.invite_id ? '...' : 'Aceptar'}
+                      </button>
+                      <button
+                        onClick={() => handleReject(inv.invite_id)}
+                        disabled={processing === inv.invite_id}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-400 rounded px-2.5 py-1.5 text-xs transition-colors"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-200 leading-snug">
-                      <b className="text-slate-100">{inv.inviter_email}</b> te
-                      ha invitado a{' '}
-                      <b className="text-amber-400">{inv.board_name}</b>
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Rol: {ROLE_LABEL[inv.invite_role] ?? inv.invite_role}
-                    </p>
-                  </div>
-                  <div className="flex gap-1.5 shrink-0">
-                    <button
-                      onClick={() => handleAccept(inv.invite_id)}
-                      disabled={processing === inv.invite_id}
-                      className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded px-3 py-1.5 text-xs transition-colors"
-                    >
-                      {processing === inv.invite_id ? '...' : 'Aceptar'}
-                    </button>
-                    <button
-                      onClick={() => handleReject(inv.invite_id)}
-                      disabled={processing === inv.invite_id}
-                      className="bg-slate-800 hover:bg-slate-700 text-slate-400 rounded px-2.5 py-1.5 text-xs transition-colors"
-                    >
-                      Rechazar
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
