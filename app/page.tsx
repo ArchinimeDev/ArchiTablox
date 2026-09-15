@@ -290,6 +290,7 @@ export default function Home() {
       }
 
       if (e.key === 'Escape') {
+        if (showCommand) return setShowCommand(false);
         if (editingId) return setEditingId(null);
         if (showShortcuts) return setShowShortcuts(false);
         if (showArchive) return setShowArchive(false);
@@ -517,35 +518,38 @@ export default function Home() {
       {!isMobile && (
         <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
+            {/* ---- ZONA IZQUIERDA ---- */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
                 A
               </div>
 
-              <BoardBar
-                boards={boards}
-                activeBoardId={activeBoardId}
-                boardRoles={boardRoles}
-                newBoardIds={newBoardIds}
-                onOpened={() => {}}
-                onBoardOpened={handleBoardOpened}
-                onSwitch={switchBoard}
-                onCreate={createBoard}
-                onRename={renameBoard}
-                onDuplicate={duplicateBoard}
-                onDelete={deleteBoard}
-              />
+              <div className="min-w-0 max-w-[180px] lg:max-w-[220px] xl:max-w-[260px]">
+                <BoardBar
+                  boards={boards}
+                  activeBoardId={activeBoardId}
+                  boardRoles={boardRoles}
+                  newBoardIds={newBoardIds}
+                  onOpened={() => {}}
+                  onBoardOpened={handleBoardOpened}
+                  onSwitch={switchBoard}
+                  onCreate={createBoard}
+                  onRename={renameBoard}
+                  onDuplicate={duplicateBoard}
+                  onDelete={deleteBoard}
+                />
+              </div>
 
               {user && activeBoard && (
-                <>
-                  <div className="w-px h-5 bg-slate-800 shrink-0" />
+                <div className="hidden xl:flex items-center gap-2 shrink-0">
+                  <div className="w-px h-5 bg-slate-800" />
                   <MembersAvatars
                     boardId={activeBoard.id}
                     onOpenShare={() => setShowShare(true)}
                   />
                   <button
                     onClick={() => setShowShare(true)}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 transition-colors h-8 shrink-0"
+                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 transition-colors shrink-0"
                     title="Compartir tablero"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -553,16 +557,17 @@ export default function Home() {
                       <polyline points="16 6 12 2 8 6" />
                       <line x1="12" y1="2" x2="12" y2="15" />
                     </svg>
-                    <span className="hidden lg:inline text-slate-400">
+                    <span className="hidden 2xl:inline text-slate-400">
                       Compartir
                     </span>
                   </button>
-                </>
+                </div>
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Botón de búsqueda global (abre CommandPalette) */}
+            {/* ---- ZONA DERECHA ---- */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              {/* Buscar */}
               <button
                 onClick={() => setShowCommand(true)}
                 className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg h-8 px-2.5 flex items-center gap-2 transition-colors shrink-0 text-xs text-slate-400"
@@ -572,13 +577,14 @@ export default function Home() {
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <span className="hidden xl:inline">Buscar...</span>
-                <kbd className="hidden xl:inline font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
+                <span className="hidden 2xl:inline">Buscar...</span>
+                <kbd className="hidden 2xl:inline font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
                   Ctrl K
                 </kbd>
               </button>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8">
+              {/* Vista toggle */}
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8 shrink-0">
                 <button
                   onClick={() => setView('board')}
                   className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
@@ -592,7 +598,7 @@ export default function Home() {
                     <rect x="3" y="3" width="7" height="18" rx="1" />
                     <rect x="14" y="3" width="7" height="18" rx="1" />
                   </svg>
-                  <span className="hidden xl:inline">Tablero</span>
+                  <span className="hidden 2xl:inline">Tablero</span>
                 </button>
                 <button
                   onClick={() => setView('calendar')}
@@ -607,13 +613,14 @@ export default function Home() {
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <path d="M16 2v4M8 2v4M3 10h18" />
                   </svg>
-                  <span className="hidden xl:inline">Calendario</span>
+                  <span className="hidden 2xl:inline">Calendario</span>
                 </button>
               </div>
 
               <div className="w-px h-5 bg-slate-800 shrink-0" />
 
-              <div className="flex items-center gap-1.5">
+              {/* Herramientas */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 {activeBoard && (
                   <NotificationsPanel
                     board={activeBoard}
@@ -639,26 +646,28 @@ export default function Home() {
                   )}
                 </button>
 
-                <DataMenu
-                  boards={boards}
-                  activeBoardId={activeBoardId}
-                  onImport={importData}
-                />
-
-                {activeBoard && (
-                  <ActivityPanel
-                    activity={activeBoard.activity ?? []}
-                    onOpenCard={(id) => setEditingId(id)}
-                    onClear={clearActivity}
+                <div className="hidden xl:flex items-center gap-1.5">
+                  <DataMenu
+                    boards={boards}
+                    activeBoardId={activeBoardId}
+                    onImport={importData}
                   />
-                )}
+                  {activeBoard && (
+                    <ActivityPanel
+                      activity={activeBoard.activity ?? []}
+                      onOpenCard={(id) => setEditingId(id)}
+                      onClear={clearActivity}
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="w-px h-5 bg-slate-800 shrink-0" />
+              <div className="w-px h-5 bg-slate-800 shrink-0 hidden lg:block" />
 
+              {/* Sync - solo en pantallas grandes */}
               {user && (
                 <div
-                  className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8"
+                  className="hidden 2xl:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8 shrink-0"
                   title={
                     syncStatus === 'synced'
                       ? 'Sincronizado con la nube'
@@ -699,9 +708,10 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Usuario */}
               {user ? (
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
+                  <div className="hidden xl:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
                     <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
                       {user.email.charAt(0).toUpperCase()}
                     </div>
@@ -709,9 +719,15 @@ export default function Home() {
                       {user.email}
                     </span>
                   </div>
+                  <div
+                    className="xl:hidden w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0"
+                    title={user.email}
+                  >
+                    {user.email.charAt(0).toUpperCase()}
+                  </div>
                   <button
                     onClick={handleLogout}
-                    className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors"
+                    className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors shrink-0"
                     title="Cerrar sesión"
                   >
                     Salir
@@ -743,8 +759,8 @@ export default function Home() {
       {/* ============ HEADER MÓVIL ============ */}
       {isMobile && (
         <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="px-3 py-2">
-            <div className="flex items-center gap-2">
+          <div className="px-2 sm:px-3 py-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setShowMobileMenu(true)}
                 className="w-9 h-9 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0 transition-colors relative"
@@ -773,6 +789,18 @@ export default function Home() {
                   onDelete={deleteBoard}
                 />
               </div>
+
+              {/* Buscar (Ctrl+K) */}
+              <button
+                onClick={() => setShowCommand(true)}
+                className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center shrink-0 transition-colors"
+                title="Buscar"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </button>
 
               {user ? (
                 <>
@@ -883,6 +911,28 @@ export default function Home() {
                     Calendario
                   </button>
                 </div>
+              </div>
+
+              <div className="mb-2 pt-2 border-t border-slate-800">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  Buscar
+                </div>
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowCommand(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <span className="flex-1 text-left">Buscar en todo</span>
+                  <kbd className="font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
+                    Ctrl K
+                  </kbd>
+                </button>
               </div>
 
               {user && activeBoard && (
