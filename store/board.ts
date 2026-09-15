@@ -131,6 +131,7 @@ function regenerateBoardIds(board: Board): Board {
       comments: card.comments?.map((c) => ({ ...c, id: uid() })) ?? [],
       attachments:
         card.attachments?.map((a) => ({ ...a, id: uid() })) ?? [],
+      assigneeIds: card.assigneeIds ?? [],
     };
     if (!card.archived) {
       const col = newColumns.find((c) => c.id === newColumnId);
@@ -218,6 +219,8 @@ interface Store {
   ) => void;
   deleteAttachment: (cardId: string, attachmentId: string) => void;
 
+  toggleAssignee: (cardId: string, userId: string) => void;
+
   addLabel: (name: string, color: string) => void;
   addLabelAndAssign: (cardId: string, name: string, color: string) => void;
   updateLabel: (labelId: string, patch: Partial<Label>) => void;
@@ -283,6 +286,7 @@ export const useBoard = create<Store>()(
               labelIds: [],
               comments: [],
               attachments: [],
+              assigneeIds: [],
               archived: false,
             };
             const column = board.columns.find((c) => c.id === columnId);
@@ -714,6 +718,36 @@ export const useBoard = create<Store>()(
           })
         ),
 
+      toggleAssignee: (cardId, userId) =>
+        set((state) =>
+          withActiveBoard(state, (board) => {
+            const card = board.cards[cardId];
+            if (!card) return board;
+            const current = card.assigneeIds ?? [];
+            const has = current.includes(userId);
+            const assigneeIds = has
+              ? current.filter((id) => id !== userId)
+              : [...current, userId];
+
+            return {
+              ...board,
+              cards: {
+                ...board.cards,
+                [cardId]: { ...card, assigneeIds },
+              },
+              activity: has
+                ? pushActivity(board, 'assignee_removed', {
+                    cardId,
+                    cardTitle: card.title,
+                  })
+                : pushActivity(board, 'assignee_added', {
+                    cardId,
+                    cardTitle: card.title,
+                  }),
+            };
+          })
+        ),
+
       addLabel: (name, color) =>
         set((state) =>
           withActiveBoard(state, (board) => ({
@@ -990,6 +1024,7 @@ export const useBoard = create<Store>()(
               labelIds,
               comments: [],
               attachments: [],
+              assigneeIds: [],
               archived: false,
             };
 
@@ -1050,7 +1085,7 @@ export const useBoard = create<Store>()(
     }),
     {
       name: 'kanban-quest-storage',
-      version: 20,
+      version: 21,
       migrate: (persisted: any, version) => {
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {

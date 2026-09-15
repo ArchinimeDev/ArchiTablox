@@ -6,15 +6,49 @@ import type { Card, Label } from '@/types';
 import { RARITY_DOT, RARITY_LABEL } from '@/lib/gamification';
 import { hexWithAlpha } from '@/lib/labels';
 
+interface Member {
+  user_id: string;
+  email: string;
+  role: string;
+}
+
+const AVATAR_COLORS = [
+  'bg-red-500',
+  'bg-orange-500',
+  'bg-amber-500',
+  'bg-emerald-500',
+  'bg-cyan-500',
+  'bg-blue-500',
+  'bg-violet-500',
+  'bg-fuchsia-500',
+  'bg-pink-500',
+];
+
+function getAvatarColor(email: string): string {
+  let hash = 0;
+  for (let i = 0; i < email.length; i++) {
+    hash = (hash * 31 + email.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
 interface Props {
   card: Card;
   labels: Label[];
+  members?: Member[];
   onArchive: (id: string) => void;
   onOpen: (id: string) => void;
   isOverlay?: boolean;
 }
 
-export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) {
+export function CardItem({
+  card,
+  labels,
+  members = [],
+  onArchive,
+  onOpen,
+  isOverlay,
+}: Props) {
   const {
     attributes,
     listeners,
@@ -50,6 +84,10 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
   const cardLabels = (card.labelIds ?? [])
     .map((id) => labels.find((l) => l.id === id))
     .filter((l): l is Label => l !== undefined);
+
+  const assignees = (card.assigneeIds ?? [])
+    .map((id) => members.find((m) => m.user_id === id))
+    .filter((m): m is Member => !!m);
 
   return (
     <div
@@ -145,7 +183,8 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
       {(hasSubtasks ||
         dueLabel ||
         commentCount > 0 ||
-        attachmentCount > 0) && (
+        attachmentCount > 0 ||
+        assignees.length > 0) && (
         <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/70">
           <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
             {hasSubtasks && (
@@ -203,6 +242,25 @@ export function CardItem({ card, labels, onArchive, onOpen, isOverlay }: Props) 
                 <span className="font-mono text-[10px] leading-none">
                   {attachmentCount}
                 </span>
+              </div>
+            )}
+
+            {assignees.length > 0 && (
+              <div className="flex -space-x-1" title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}>
+                {assignees.slice(0, 3).map((m) => (
+                  <div
+                    key={m.user_id}
+                    className={`w-4 h-4 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white ring-2 ring-slate-900`}
+                    title={m.email}
+                  >
+                    {m.email.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {assignees.length > 3 && (
+                  <div className="w-4 h-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-2 ring-slate-900">
+                    +{assignees.length - 3}
+                  </div>
+                )}
               </div>
             )}
           </div>

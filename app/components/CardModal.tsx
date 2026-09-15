@@ -7,8 +7,35 @@ import { LABEL_COLORS, hexWithAlpha } from '@/lib/labels';
 import { toDateInput, fromDateInput } from '@/lib/dateUtils';
 import { createClient } from '@/utils/supabase/client';
 
+interface Member {
+  user_id: string;
+  email: string;
+  role: string;
+}
+
+const AVATAR_COLORS = [
+  'bg-red-500',
+  'bg-orange-500',
+  'bg-amber-500',
+  'bg-emerald-500',
+  'bg-cyan-500',
+  'bg-blue-500',
+  'bg-violet-500',
+  'bg-fuchsia-500',
+  'bg-pink-500',
+];
+
+function getAvatarColor(email: string): string {
+  let hash = 0;
+  for (let i = 0; i < email.length; i++) {
+    hash = (hash * 31 + email.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
 interface Props {
   card: Card;
+  boardId: string;
   labels: Label[];
   onClose: () => void;
   onSave: (patch: Partial<Card>) => void;
@@ -26,6 +53,7 @@ interface Props {
     attachment: Omit<Attachment, 'id' | 'createdAt'>
   ) => void;
   onDeleteAttachment: (attachmentId: string) => void;
+  onToggleAssignee: (userId: string) => void;
 }
 
 function renderCommentText(text: string) {
@@ -79,6 +107,7 @@ function isImage(type: string) {
 
 export function CardModal({
   card,
+  boardId,
   labels,
   onClose,
   onSave,
@@ -94,6 +123,7 @@ export function CardModal({
   onDeleteComment,
   onAddAttachment,
   onDeleteAttachment,
+  onToggleAssignee,
 }: Props) {
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? '');
@@ -108,6 +138,7 @@ export function CardModal({
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const subtasks = card.subtasks ?? [];
@@ -116,6 +147,17 @@ export function CardModal({
   const cardLabelIds = card.labelIds ?? [];
   const comments = card.comments ?? [];
   const attachments = card.attachments ?? [];
+  const assigneeIds = card.assigneeIds ?? [];
+
+  // Cargar miembros del tablero
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .rpc('get_board_members', { p_board_id: boardId })
+      .then(({ data }) => {
+        if (data) setMembers(data as Member[]);
+      });
+  }, [boardId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -398,6 +440,89 @@ export function CardModal({
                 );
               })}
             </div>
+          </div>
+
+          {/* ASIGNADOS */}
+          <div className="mb-5 pt-4 border-t border-slate-800">
+            <div className="flex justify-between items-center mb-2.5">
+              <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium flex items-center gap-2">
+                👥 Asignados
+                {assigneeIds.length > 0 && (
+                  <span className="text-[10px] font-mono text-slate-600 bg-slate-950 px-1.5 py-0.5 rounded">
+                    {assigneeIds.length}
+                  </span>
+                )}
+              </label>
+            </div>
+
+            {members.length === 0 ? (
+              <p className="text-xs text-slate-600 italic">
+                Cargando miembros...
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {members.map((m) => {
+                  const active = assigneeIds.includes(m.user_id);
+                  return (
+                    <button
+                      key={m.user_id}
+                      type="button"
+                      onClick={() => onToggleAssignee(m.user_id)}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border transition-all ${
+                        active
+                          ? 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/15'
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950'
+                      }`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[11px] font-bold text-white shrink-0`}
+                      >
+                        {m.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div
+                          className={`text-xs truncate ${
+                            active ? 'text-slate-100' : 'text-slate-300'
+                          }`}
+                        >
+                          {m.email}
+                        </div>
+                        <div className="text-[10px] text-slate-500 capitalize">
+                          {m.role === 'owner'
+                            ? 'Propietario'
+                            : m.role === 'editor'
+                            ? 'Editor'
+                            : 'Lector'}
+                        </div>
+                      </div>
+                      <div
+                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          active
+                            ? 'bg-amber-500 border-amber-500'
+                            : 'border-slate-700'
+                        }`}
+                      >
+                        {active && (
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-slate-950"
+                          >
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ADJUNTOS */}

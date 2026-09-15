@@ -41,6 +41,7 @@ export interface Card {
   labelIds?: string[];
   comments?: Comment[];
   attachments?: Attachment[];
+  assigneeIds?: string[];
   archived?: boolean;
   archivedAt?: number;
 }
@@ -81,7 +82,9 @@ export type ActivityType =
   | 'card_renamed'
   | 'comment_added'
   | 'template_applied'
-  | 'attachment_added';
+  | 'attachment_added'
+  | 'assignee_added'
+  | 'assignee_removed';
 
 export interface ActivityEvent {
   id: string;

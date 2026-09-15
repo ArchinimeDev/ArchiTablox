@@ -36,6 +36,12 @@ import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 
 type ViewMode = 'board' | 'calendar';
 
+interface Member {
+  user_id: string;
+  email: string;
+  role: string;
+}
+
 export default function Home() {
   const boards = useBoard((s) => s.boards);
   const activeBoardId = useBoard((s) => s.activeBoardId);
@@ -60,6 +66,7 @@ export default function Home() {
   const deleteComment = useBoard((s) => s.deleteComment);
   const addAttachment = useBoard((s) => s.addAttachment);
   const deleteAttachment = useBoard((s) => s.deleteAttachment);
+  const toggleAssignee = useBoard((s) => s.toggleAssignee);
   const addLabel = useBoard((s) => s.addLabel);
   const addLabelAndAssign = useBoard((s) => s.addLabelAndAssign);
   const deleteLabel = useBoard((s) => s.deleteLabel);
@@ -114,6 +121,7 @@ export default function Home() {
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [newBoardIds, setNewBoardIds] = useState<string[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
 
   const newCardInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -150,6 +158,17 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('kanban-view', view);
   }, [view]);
+
+  // Cargar miembros del tablero activo
+  useEffect(() => {
+    if (!activeBoardId) return;
+    const supabase = createClient();
+    supabase
+      .rpc('get_board_members', { p_board_id: activeBoardId })
+      .then(({ data }) => {
+        if (data) setMembers(data as Member[]);
+      });
+  }, [activeBoardId]);
 
   // ============ AUTENTICACIÓN ============
   useEffect(() => {
@@ -1278,6 +1297,7 @@ export default function Home() {
                     cards={cards}
                     cardOrder={filteredByColumn[col.id] ?? []}
                     labels={labels}
+                    members={members}
                     onArchive={archiveCard}
                     onOpen={setEditingId}
                     onUpdateColumn={updateColumn}
@@ -1339,6 +1359,7 @@ export default function Home() {
                   <CardItem
                     card={activeCard}
                     labels={labels}
+                    members={members}
                     onArchive={() => {}}
                     onOpen={() => {}}
                     isOverlay
@@ -1362,6 +1383,7 @@ export default function Home() {
       {editingCard && (
         <CardModal
           card={editingCard}
+          boardId={activeBoardId}
           labels={labels}
           onClose={() => setEditingId(null)}
           onSave={(patch) => updateCard(editingCard.id, patch)}
@@ -1386,6 +1408,9 @@ export default function Home() {
           onAddAttachment={(att) => addAttachment(editingCard.id, att)}
           onDeleteAttachment={(attId) =>
             deleteAttachment(editingCard.id, attId)
+          }
+          onToggleAssignee={(userId) =>
+            toggleAssignee(editingCard.id, userId)
           }
         />
       )}
