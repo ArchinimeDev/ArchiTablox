@@ -48,7 +48,6 @@ export function NotificationsPanel({
   const [permissionState, setPermissionState] = useState<string>('default');
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [processingInvite, setProcessingInvite] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
   const ref = useRef<HTMLDivElement>(null);
 
   const settings = board.notificationSettings ?? DEFAULT_NOTIFICATION_SETTINGS;
@@ -68,29 +67,12 @@ export function NotificationsPanel({
 
   const loadInvites = async () => {
     const supabase = createClient();
-
-    const { data: userData } = await supabase.auth.getUser();
-    const currentEmail = userData.user?.email ?? '(no logueado)';
-
     const { data, error } = await supabase.rpc('get_my_pending_invites');
-
-    console.log('[INVITES] usuario actual:', currentEmail);
-    console.log('[INVITES] data:', data);
-    console.log('[INVITES] error:', error);
-
     if (error) {
-      setDebugInfo(`Error: ${error.message}`);
+      console.error('[INVITES] Error:', error.message);
       return;
     }
-
-    const list = (data ?? []) as PendingInvite[];
-    setInvites(list);
-
-    if (list.length === 0) {
-      setDebugInfo(`Sin invitaciones para ${currentEmail}`);
-    } else {
-      setDebugInfo(`${list.length} invitación(es)`);
-    }
+    if (data) setInvites(data as PendingInvite[]);
   };
 
   useEffect(() => {
@@ -124,6 +106,7 @@ export function NotificationsPanel({
     }
   }, [open]);
 
+  // Notificaciones del navegador
   useEffect(() => {
     if (!settings.enabled) return;
     if (!settings.browserNotifications) return;
@@ -271,14 +254,14 @@ export function NotificationsPanel({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`bg-slate-900 hover:bg-slate-800 border rounded-lg w-8 h-8 flex items-center justify-center transition-colors relative ${
+        className={`bg-slate-900 hover:bg-slate-800 border rounded-lg w-8 h-8 flex items-center justify-center transition-colors relative shrink-0 ${
           isUrgent
-            ? 'border-red-500/40 hover:border-red-500/60'
+            ? 'border-red-500/50 hover:border-red-500/70'
             : totalInviteCount > 0
-            ? 'border-amber-500/60 hover:border-amber-500/80 animate-pulse'
+            ? 'border-amber-500/60 hover:border-amber-500/80'
             : 'border-slate-800 hover:border-slate-700'
         }`}
         title={
@@ -456,12 +439,6 @@ export function NotificationsPanel({
             </div>
           ) : (
             <div className="max-h-96 overflow-y-auto">
-              {debugInfo && (
-                <div className="px-3 py-1.5 text-[9px] font-mono text-slate-600 border-b border-slate-800 bg-slate-950/40">
-                  🐛 {debugInfo}
-                </div>
-              )}
-
               {invites.length > 0 && (
                 <div className="border-b border-slate-800">
                   <div className="px-3 py-1.5 flex items-center gap-2 bg-amber-500/5 border-b border-amber-500/20">

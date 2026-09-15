@@ -124,7 +124,6 @@ export default function Home() {
 
   useEffect(() => setMounted(true), []);
 
-  // Detección de móvil
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -676,13 +675,13 @@ export default function Home() {
       {/* ============ HEADER MÓVIL ============ */}
       {isMobile && (
         <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="px-3 py-2">
-            {/* Fila 1: Logo + Tablero + Notificaciones + Avatar */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
-                  A
-                </div>
+          <div className="px-3 pt-2.5 pb-2 space-y-2">
+            {/* Fila 1: Logo + Tablero + Campana + Avatar */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+                A
+              </div>
+              <div className="flex-1 min-w-0">
                 <BoardBar
                   boards={boards}
                   activeBoardId={activeBoardId}
@@ -698,32 +697,32 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                {activeBoard && (
-                  <NotificationsPanel
-                    board={activeBoard}
-                    onOpenCard={(id) => setEditingId(id)}
-                    onUpdateSettings={updateNotificationSettings}
-                    onInviteAccepted={handleInviteAccepted}
-                  />
-                )}
+              {activeBoard && (
+                <NotificationsPanel
+                  board={activeBoard}
+                  onOpenCard={(id) => setEditingId(id)}
+                  onUpdateSettings={updateNotificationSettings}
+                  onInviteAccepted={handleInviteAccepted}
+                />
+              )}
 
-                {user && (
-                  <div
-                    className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0"
-                    title={user.email}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400">
-                      {user.email.charAt(0).toUpperCase()}
-                    </div>
+              {user && (
+                <div
+                  className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0"
+                  title={user.email}
+                >
+                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400">
+                    {user.email.charAt(0).toUpperCase()}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Fila 2: scroll horizontal con acciones */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3" style={{ scrollbarWidth: 'none' }}>
-              {/* Vista */}
+            {/* Fila 2: acciones con scroll horizontal */}
+            <div
+              className="flex gap-1.5 overflow-x-auto -mx-3 pl-3 pr-6 pb-0.5"
+              style={{ scrollbarWidth: 'none' }}
+            >
               <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8 shrink-0">
                 <button
                   onClick={() => setView('board')}
@@ -778,7 +777,7 @@ export default function Home() {
 
               <button
                 onClick={() => setShowArchive(true)}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 shrink-0 text-slate-300 relative"
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 shrink-0 text-slate-300"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                   <rect x="2" y="3" width="20" height="5" rx="1" />
