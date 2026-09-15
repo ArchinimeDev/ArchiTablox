@@ -24,10 +24,11 @@ import { RARITY_LABEL } from '@/lib/gamification';
 import { dayKey } from '@/lib/dateUtils';
 import { createClient } from '@/utils/supabase/client';
 import { useSyncBoards } from './hooks/useSyncBoards';
+
+// Componentes
 import { ColumnView } from './components/ColumnView';
 import { CardItem } from './components/CardItem';
 import { CardModal } from './components/CardModal';
-import { BoardBar } from './components/BoardBar';
 import { DataMenu } from './components/DataMenu';
 import { ArchiveModal } from './components/ArchiveModal';
 import { CalendarView } from './components/CalendarView';
@@ -41,6 +42,13 @@ import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { ThemeToggle } from './components/ThemeToggle';
 import { CommandPalette } from './components/CommandPalette';
+
+// NUEVOS: layout rediseñado
+import { Sidebar } from './components/Sidebar';
+import { Topbar } from './components/Topbar';
+import { MobileHeader } from './components/MobileHeader';
+import { MobileBottomNav } from './components/MobileBottomNav';
+
 import { sendEmail } from '@/lib/notify';
 
 type ViewMode = 'board' | 'calendar';
@@ -617,9 +625,14 @@ export default function Home() {
 
   if (!mounted) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <p className="text-slate-400 text-sm">Cargando...</p>
-      </main>
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-base animate-pulse">
+            A
+          </div>
+          <span className="text-sm text-slate-500">Cargando...</span>
+        </div>
+      </div>
     );
   }
 
@@ -628,330 +641,330 @@ export default function Home() {
     !!search || filterPriority !== 'all' || filterLabel !== 'all';
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200">
-      {/* ============ HEADER ESCRITORIO ============ */}
-      {!isMobile && (
-        <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
-            {/* ---- ZONA IZQUIERDA ---- */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="w-8 h-8 rounded-md bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
-                A
-              </div>
+    <div className="min-h-screen bg-slate-950 text-slate-200">
+      {/* ============ SIDEBAR (PC) ============ */}
+      <Sidebar
+        boards={boards}
+        activeBoardId={activeBoardId}
+        boardRoles={boardRoles}
+        newBoardIds={newBoardIds}
+        user={user}
+        view={view}
+        archivedCount={archivedCards.length}
+        onSwitchBoard={switchBoard}
+        onSetView={setView}
+        onCreateBoard={createBoard}
+        onOpenShare={() => setShowShare(true)}
+        onOpenArchive={() => setShowArchive(true)}
+        onOpenCommand={() => setShowCommand(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onLogout={handleLogout}
+        onBoardOpened={handleBoardOpened}
+      />
 
-              <div className="min-w-0 max-w-[180px] lg:max-w-[220px] xl:max-w-[260px]">
-                <BoardBar
-                  boards={boards}
-                  activeBoardId={activeBoardId}
-                  boardRoles={boardRoles}
-                  newBoardIds={newBoardIds}
-                  onOpened={() => {}}
-                  onBoardOpened={handleBoardOpened}
-                  onSwitch={switchBoard}
-                  onCreate={createBoard}
-                  onRename={renameBoard}
-                  onDuplicate={duplicateBoard}
-                  onDelete={deleteBoard}
+      {/* ============ CONTENIDO PRINCIPAL ============ */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        {/* Topbar (PC) */}
+        <Topbar
+          board={activeBoard}
+          user={user}
+          syncStatus={syncStatus}
+          onOpenCommand={() => setShowCommand(true)}
+          onOpenShare={() => setShowShare(true)}
+          onOpenCard={(id) => setEditingId(id)}
+          onUpdateNotificationSettings={updateNotificationSettings}
+          onInviteAccepted={handleInviteAccepted}
+        />
+
+        {/* Header (Móvil) */}
+        <MobileHeader
+          board={activeBoard}
+          user={user}
+          onOpenMenu={() => setShowMobileMenu(true)}
+          onOpenCommand={() => setShowCommand(true)}
+        />
+
+        {/* Banner de invitaciones */}
+        {user && (
+          <WelcomeInvitesBanner
+            userId={userId}
+            onAccepted={handleInviteAccepted}
+          />
+        )}
+
+        {/* ============ MAIN ============ */}
+        <main className="flex-1 px-3 sm:px-4 lg:px-6 py-4 pb-24 lg:pb-6">
+          {/* ============ TOOLBAR ============ */}
+          {view === 'board' && (
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {/* Input nueva tarjeta */}
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 min-w-[240px] focus-within:border-slate-700 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <input
+                  ref={newCardInputRef}
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                  placeholder="Añadir tarjeta... (N)"
+                  className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
                 />
+                <select
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(e.target.value as Priority)}
+                  className="bg-slate-950 border border-slate-800 rounded text-xs text-slate-300 px-1.5 py-1 focus:outline-none focus:border-slate-700 cursor-pointer shrink-0"
+                >
+                  {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
+                    <option key={p} value={p}>
+                      {RARITY_LABEL[p]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleAdd}
+                  disabled={!newTitle.trim()}
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold text-xs rounded px-3 py-1.5 transition-colors shrink-0"
+                >
+                  Añadir
+                </button>
               </div>
 
-              {user && activeBoard && (
-                <div className="hidden xl:flex items-center gap-2 shrink-0 mr-2">
-                  <div className="w-px h-5 bg-slate-800" />
-                  <MembersAvatars
-                    boardId={activeBoard.id}
-                    onOpenShare={() => setShowShare(true)}
-                  />
-                  <button
-                    onClick={() => setShowShare(true)}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg px-2.5 h-8 text-xs flex items-center gap-1.5 transition-colors shrink-0"
-                    title="Compartir tablero"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                    <span className="hidden 2xl:inline text-slate-400">
-                      Compartir
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
+              {/* Plantillas */}
+              <TemplatesMenu
+                templates={templates}
+                onApply={handleApplyTemplate}
+                onEdit={(t) => setEditingTemplate(t)}
+                onCreate={() => setEditingTemplate(null)}
+              />
 
-            {/* ---- ZONA DERECHA ---- */}
-            <div className="flex items-center gap-2.5 shrink-0 pl-4 border-l border-slate-800/70">
-              {/* Buscar */}
-              <button
-                onClick={() => setShowCommand(true)}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg h-8 px-2.5 flex items-center gap-2 transition-colors shrink-0 text-xs text-slate-400"
-                title="Buscar (Ctrl+K)"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+              {/* Buscador local */}
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 sm:flex-initial sm:w-56 min-w-[180px] focus-within:border-slate-700 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <span className="hidden 2xl:inline">Buscar...</span>
-                <kbd className="hidden 2xl:inline font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
-                  Ctrl K
-                </kbd>
-              </button>
-
-              {/* Vista toggle */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center h-8 shrink-0">
-                <button
-                  onClick={() => setView('board')}
-                  className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
-                    view === 'board'
-                      ? 'bg-slate-800 text-slate-100'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title="Vista tablero (C)"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="18" rx="1" />
-                    <rect x="14" y="3" width="7" height="18" rx="1" />
-                  </svg>
-                  <span className="hidden 2xl:inline">Tablero</span>
-                </button>
-                <button
-                  onClick={() => setView('calendar')}
-                  className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors h-7 ${
-                    view === 'calendar'
-                      ? 'bg-slate-800 text-slate-100'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title="Vista calendario (C)"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <path d="M16 2v4M8 2v4M3 10h18" />
-                  </svg>
-                  <span className="hidden 2xl:inline">Calendario</span>
-                </button>
+                <input
+                  ref={searchInputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar... (/)"
+                  className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="text-slate-500 hover:text-slate-200 p-0.5 shrink-0"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
-              <div className="w-px h-5 bg-slate-800 shrink-0" />
+              {/* Filtros */}
+              <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={filterPriority}
+                  onChange={(e) =>
+                    setFilterPriority(e.target.value as Priority | 'all')
+                  }
+                  className="bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
+                >
+                  <option value="all">Prioridad</option>
+                  {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
+                    <option key={p} value={p}>
+                      {RARITY_LABEL[p]}
+                    </option>
+                  ))}
+                </select>
 
-              {/* Herramientas */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {activeBoard && (
-                  <NotificationsPanel
-                    board={activeBoard}
-                    onOpenCard={(id) => setEditingId(id)}
-                    onUpdateSettings={updateNotificationSettings}
-                    onInviteAccepted={handleInviteAccepted}
-                  />
+                {labels.length > 0 && (
+                  <select
+                    value={filterLabel}
+                    onChange={(e) => setFilterLabel(e.target.value)}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
+                  >
+                    <option value="all">Etiqueta</option>
+                    {labels.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
                 )}
 
-                <button
-                  onClick={() => setShowArchive(true)}
-                  className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors shrink-0 relative"
-                  title="Archivados"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                    <rect x="2" y="3" width="20" height="5" rx="1" />
-                    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-                  </svg>
-                  {archivedCards.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-slate-700 text-slate-200 text-[9px] font-mono px-1 rounded-full min-w-[16px] h-4 flex items-center justify-center">
-                      {archivedCards.length > 9 ? '9+' : archivedCards.length}
-                    </span>
-                  )}
-                </button>
-
-                <div className="hidden xl:flex items-center gap-1.5">
-                  <DataMenu
-                    boards={boards}
-                    activeBoardId={activeBoardId}
-                    onImport={importData}
-                  />
-                  {activeBoard && (
-                    <ActivityPanel
-                      activity={activeBoard.activity ?? []}
-                      onOpenCard={(id) => setEditingId(id)}
-                      onClear={clearActivity}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="w-px h-5 bg-slate-800 shrink-0 hidden lg:block" />
-
-              {/* Sync - solo en pantallas grandes */}
-              {user && (
-                <div
-                  className="hidden 2xl:flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-8 shrink-0"
-                  title={
-                    syncStatus === 'synced'
-                      ? 'Sincronizado con la nube'
-                      : syncStatus === 'saving'
-                      ? 'Guardando...'
-                      : syncStatus === 'loading'
-                      ? 'Cargando...'
-                      : syncStatus === 'error'
-                      ? 'Error de sincronización'
-                      : ''
-                  }
-                >
-                  {syncStatus === 'saving' || syncStatus === 'loading' ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 animate-spin">
-                      <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-                    </svg>
-                  ) : syncStatus === 'error' ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 8v4M12 16h.01" />
-                    </svg>
-                  ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                  )}
-                  <span className="text-[10px] text-slate-500">
-                    {syncStatus === 'synced'
-                      ? 'Nube'
-                      : syncStatus === 'saving'
-                      ? 'Guardando'
-                      : syncStatus === 'loading'
-                      ? 'Cargando'
-                      : syncStatus === 'error'
-                      ? 'Error'
-                      : ''}
-                  </span>
-                </div>
-              )}
-
-              {/* Usuario */}
-              {user ? (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="hidden xl:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg pl-1 pr-3 h-8">
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
-                      {user.email.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-xs text-slate-400 max-w-[110px] truncate">
-                      {user.email}
-                    </span>
-                  </div>
-                  <div
-                    className="xl:hidden w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0"
-                    title={user.email}
-                  >
-                    {user.email.charAt(0).toUpperCase()}
-                  </div>
+                {hasActiveFilters && (
                   <button
-                    onClick={handleLogout}
-                    className="text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-900 rounded-lg px-2.5 h-8 text-xs transition-colors shrink-0"
-                    title="Cerrar sesión"
+                    onClick={() => {
+                      setSearch('');
+                      setFilterPriority('all');
+                      setFilterLabel('all');
+                    }}
+                    className="text-xs text-slate-500 hover:text-red-400 px-3 h-10 rounded-lg border border-slate-800 hover:border-red-900 transition-colors"
                   >
-                    Salir
+                    Limpiar
                   </button>
-                </div>
-              ) : (
-                <a
-                  href="/login"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded-lg px-3 h-8 flex items-center text-xs transition-colors shrink-0"
-                >
-                  Iniciar sesión
-                </a>
-              )}
-
-              <ThemeToggle variant="header" />
-
-              <button
-                onClick={() => setShowShortcuts(true)}
-                className="text-slate-500 hover:text-slate-200 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 flex items-center justify-center transition-colors text-xs font-bold shrink-0"
-                title="Atajos (?)"
-              >
-                ?
-              </button>
-            </div>
-          </div>
-        </header>
-      )}
-
-      {/* ============ HEADER MÓVIL ============ */}
-      {isMobile && (
-        <header className="border-b border-slate-900 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
-          <div className="px-2 sm:px-3 py-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => setShowMobileMenu(true)}
-                className="w-9 h-9 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0 transition-colors relative"
-                title="Menú"
-              >
-                A
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-slate-950 border border-amber-500 flex items-center justify-center">
-                  <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </span>
-              </button>
-
-              <div className="flex-1 min-w-0">
-                <BoardBar
-                  boards={boards}
-                  activeBoardId={activeBoardId}
-                  boardRoles={boardRoles}
-                  newBoardIds={newBoardIds}
-                  onOpened={() => {}}
-                  onBoardOpened={handleBoardOpened}
-                  onSwitch={switchBoard}
-                  onCreate={createBoard}
-                  onRename={renameBoard}
-                  onDuplicate={duplicateBoard}
-                  onDelete={deleteBoard}
-                />
+                )}
               </div>
-
-              <button
-                onClick={() => setShowCommand(true)}
-                className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center shrink-0 transition-colors"
-                title="Buscar"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-              </button>
-
-              {user ? (
-                <>
-                  {activeBoard && (
-                    <NotificationsPanel
-                      board={activeBoard}
-                      onOpenCard={(id) => setEditingId(id)}
-                      onUpdateSettings={updateNotificationSettings}
-                      onInviteAccepted={handleInviteAccepted}
-                    />
-                  )}
-                  <div
-                    className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0"
-                    title={user.email}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400">
-                      {user.email.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <a
-                  href="/login"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 h-9 flex items-center text-xs transition-colors shrink-0"
-                >
-                  Entrar
-                </a>
-              )}
             </div>
-          </div>
-        </header>
-      )}
+          )}
 
-      {/* ============ MENÚ MÓVIL (drawer) ============ */}
+          {/* ============ VISTA TABLERO ============ */}
+          {view === 'board' && (
+            <>
+              {/* Tabs de columnas (móvil) */}
+              {columns.length > 0 && (
+                <div className="lg:hidden -mx-3 px-3 mb-3">
+                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                    {columns.map((col, idx) => {
+                      const isActive = idx === activeColumnIdx;
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => scrollToColumn(col.id)}
+                          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5 border ${
+                            isActive
+                              ? 'bg-slate-800 text-slate-100 border-slate-700'
+                              : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <span className="truncate max-w-[100px]">
+                            {col.title}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            {col.cardIds.length}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <div
+                  ref={boardScrollRef}
+                  className="flex gap-4 overflow-x-auto pb-4 items-start snap-x snap-mandatory lg:snap-none scroll-smooth -mx-3 px-3 lg:mx-0 lg:px-0"
+                >
+                  {columns.map((col) => (
+                    <ColumnView
+                      key={col.id}
+                      column={col}
+                      cards={cards}
+                      cardOrder={filteredByColumn[col.id] ?? []}
+                      labels={labels}
+                      members={members}
+                      onArchive={archiveCard}
+                      onOpen={setEditingId}
+                      onUpdateColumn={updateColumn}
+                      onDeleteColumn={deleteColumn}
+                    />
+                  ))}
+
+                  {/* Añadir columna */}
+                  <div className="w-[320px] shrink-0 snap-start">
+                    {addingColumn ? (
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                        <input
+                          value={newColumnName}
+                          onChange={(e) => setNewColumnName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddColumn();
+                            if (e.key === 'Escape') {
+                              setAddingColumn(false);
+                              setNewColumnName('');
+                            }
+                          }}
+                          placeholder="Nombre de columna..."
+                          autoFocus
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:border-amber-500/60 text-slate-100"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleAddColumn}
+                            className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 py-1.5 text-xs transition-colors"
+                          >
+                            Crear
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAddingColumn(false);
+                              setNewColumnName('');
+                            }}
+                            className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingColumn(true)}
+                        className="w-full bg-transparent hover:bg-slate-900 border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-4 text-sm text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center gap-2 h-[60px]"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        Añadir columna
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <DragOverlay dropAnimation={{ duration: 180 }}>
+                  {activeCard ? (
+                    <CardItem
+                      card={activeCard}
+                      labels={labels}
+                      members={members}
+                      onArchive={() => {}}
+                      onOpen={() => {}}
+                      isOverlay
+                    />
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </>
+          )}
+
+          {/* ============ VISTA CALENDARIO ============ */}
+          {view === 'calendar' && (
+            <CalendarView
+              cards={filteredCards}
+              labels={labels}
+              onOpen={setEditingId}
+              onOpenDay={(ts) => setDayModalDate(ts)}
+            />
+          )}
+        </main>
+
+        {/* Bottom nav (Móvil) */}
+        <MobileBottomNav
+          board={activeBoard}
+          view={view}
+          user={user}
+          archivedCount={archivedCards.length}
+          onSetView={setView}
+          onOpenNewCard={() => {
+            newCardInputRef.current?.focus();
+          }}
+          onOpenCommand={() => setShowCommand(true)}
+          onOpenArchive={() => setShowArchive(true)}
+          onOpenProfile={() => setShowMobileMenu(true)}
+        />
+      </div>
+
+      {/* ============ DRAWER MÓVIL ============ */}
       {isMobile && showMobileMenu && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-3 overflow-y-auto pb-6"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 px-3 overflow-y-auto pb-6"
           onClick={() => setShowMobileMenu(false)}
         >
           <div
@@ -960,7 +973,7 @@ export default function Home() {
           >
             <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">
                   A
                 </div>
                 <div className="min-w-0">
@@ -985,8 +998,67 @@ export default function Home() {
             </div>
 
             <div className="max-h-[75vh] overflow-y-auto p-2">
+              {/* Tableros */}
               <div className="mb-2">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  Tableros
+                </div>
+                {boards.map((b) => {
+                  const isActive = b.id === activeBoardId;
+                  const isNew = newBoardIds.includes(b.id);
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        switchBoard(b.id);
+                        handleBoardOpened(b.id);
+                        setShowMobileMenu(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? 'bg-slate-800 text-slate-100 font-medium'
+                          : 'text-slate-300 hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={isActive ? 'text-amber-400' : 'text-slate-500'}
+                      >
+                        <rect x="3" y="3" width="7" height="18" rx="1" />
+                        <rect x="14" y="3" width="7" height="18" rx="1" />
+                      </svg>
+                      <span className="flex-1 text-left truncate">{b.name}</span>
+                      {isNew && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    const name = prompt('Nombre del nuevo tablero:');
+                    if (name?.trim()) createBoard(name.trim());
+                  }}
+                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <span className="flex-1 text-left">Nuevo tablero</span>
+                </button>
+              </div>
+
+              {/* Vista */}
+              <div className="pt-2 border-t border-slate-800 mb-2">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
                   Vista
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 px-1">
@@ -1027,89 +1099,25 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mb-2 pt-2 border-t border-slate-800">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-                  Buscar
+              {/* Tema */}
+              <div className="pt-2 border-t border-slate-800">
+                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  Tema
                 </div>
-                <button
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    setShowCommand(true);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.3-4.3" />
-                  </svg>
-                  <span className="flex-1 text-left">Buscar en todo</span>
-                  <kbd className="font-mono text-[10px] text-slate-500 bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
-                    Ctrl K
-                  </kbd>
-                </button>
+                <ThemeToggle
+                  variant="menu"
+                  onToggle={() => setShowMobileMenu(false)}
+                />
               </div>
 
-              {user && activeBoard && (
-                <div className="mb-2 pt-2 border-t border-slate-800">
-                  <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-                    Tablero actual
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowMobileMenu(false);
-                      setShowShare(true);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                    <span className="flex-1 text-left">Compartir tablero</span>
-                  </button>
-                  <div className="px-3 pt-1">
-                    <MembersAvatars
-                      boardId={activeBoard.id}
-                      onOpenShare={() => {
-                        setShowMobileMenu(false);
-                        setShowShare(true);
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-2 pt-2 border-t border-slate-800">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-                  Herramientas
-                </div>
-                <button
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    setEditingTemplate(null);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="9" y1="15" x2="15" y2="15" />
-                  </svg>
-                  <span className="flex-1 text-left">Plantillas</span>
-                  <span className="text-[10px] text-slate-600 font-mono">
-                    {templates.length}
-                  </span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </button>
+              {/* Otros */}
+              <div className="pt-2 border-t border-slate-800">
                 <button
                   onClick={() => {
                     setShowMobileMenu(false);
                     setShowArchive(true);
                   }}
-                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                     <rect x="2" y="3" width="20" height="5" rx="1" />
@@ -1117,32 +1125,17 @@ export default function Home() {
                   </svg>
                   <span className="flex-1 text-left">Archivados</span>
                   {archivedCards.length > 0 && (
-                    <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-1.5 py-0.5 rounded-full">
+                    <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full">
                       {archivedCards.length}
                     </span>
                   )}
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMobileMenu(false);
-                    setView('board');
-                  }}
-                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                  </svg>
-                  <span className="flex-1 text-left">Buscar y filtrar</span>
                 </button>
                 <button
                   onClick={() => {
                     setShowMobileMenu(false);
                     setShowShortcuts(true);
                   }}
-                  className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
                     <circle cx="12" cy="12" r="10" />
@@ -1150,47 +1143,17 @@ export default function Home() {
                   </svg>
                   <span className="flex-1 text-left">Atajos de teclado</span>
                 </button>
-                <ThemeToggle
-                  variant="menu"
-                  onToggle={() => setShowMobileMenu(false)}
-                />
               </div>
 
-              {activeBoard && (
-                <div className="mb-2 pt-2 border-t border-slate-800">
-                  <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-                    Otros
-                  </div>
-                  <div className="px-1 flex gap-1.5">
-                    <div className="flex-1">
-                      <DataMenu
-                        boards={boards}
-                        activeBoardId={activeBoardId}
-                        onImport={importData}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <ActivityPanel
-                        activity={activeBoard.activity ?? []}
-                        onOpenCard={(id) => {
-                          setShowMobileMenu(false);
-                          setEditingId(id);
-                        }}
-                        onClear={clearActivity}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              {/* Cerrar sesión */}
               {user && (
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-slate-800 mt-2">
                   <button
                     onClick={() => {
                       setShowMobileMenu(false);
                       handleLogout();
                     }}
-                    className="w-full flex items-center gap-3 px-3 h-11 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -1206,391 +1169,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Banner de invitaciones pendientes */}
-      {user && (
-        <WelcomeInvitesBanner
-          userId={userId}
-          onAccepted={handleInviteAccepted}
-        />
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        {/* ============ TOOLBAR ============ */}
-        {isMobile ? (
-          <div className="mb-3 space-y-2">
-            {view === 'board' && (
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <input
-                    ref={newCardInputRef}
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    placeholder="Nueva tarjeta..."
-                    className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
-                  />
-                </div>
-                <button
-                  onClick={handleAdd}
-                  disabled={!newTitle.trim()}
-                  className="bg-amber-500 hover:bg-amber-400 active:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-bold rounded-lg w-9 h-9 flex items-center justify-center shrink-0 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </button>
-                <TemplatesMenu
-                  templates={templates}
-                  onApply={handleApplyTemplate}
-                  onEdit={(t) => setEditingTemplate(t)}
-                  onCreate={() => setEditingTemplate(null)}
-                />
-              </div>
-            )}
-
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 h-9 flex-1 min-w-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-                <input
-                  ref={searchInputRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar en todo..."
-                  className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="text-slate-500 hover:text-slate-200 p-0.5"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={() => setShowFilters((s) => !s)}
-                className={`h-9 px-3 rounded-lg border text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                  hasActiveFilters || showFilters
-                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-                Filtros
-                {hasActiveFilters && (
-                  <span className="bg-amber-500 text-slate-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {(filterPriority !== 'all' ? 1 : 0) +
-                      (filterLabel !== 'all' ? 1 : 0)}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {showFilters && (
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium shrink-0 w-16">
-                    Prioridad
-                  </span>
-                  <select
-                    value={filterPriority}
-                    onChange={(e) =>
-                      setFilterPriority(e.target.value as Priority | 'all')
-                    }
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
-                  >
-                    <option value="all">Todas</option>
-                    {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
-                      <option key={p} value={p}>
-                        {RARITY_LABEL[p]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {labels.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium shrink-0 w-16">
-                      Etiqueta
-                    </span>
-                    <select
-                      value={filterLabel}
-                      onChange={(e) => setFilterLabel(e.target.value)}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
-                    >
-                      <option value="all">Todas</option>
-                      {labels.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {hasActiveFilters && (
-                  <button
-                    onClick={() => {
-                      setSearch('');
-                      setFilterPriority('all');
-                      setFilterLabel('all');
-                    }}
-                    className="w-full text-xs text-slate-400 hover:text-red-400 py-1.5 rounded-lg border border-slate-800 hover:border-red-900 transition-colors"
-                  >
-                    Limpiar filtros
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {view === 'board' && (
-              <>
-                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 min-w-[280px]">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <input
-                    ref={newCardInputRef}
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    placeholder="Añadir tarjeta... (N)"
-                    className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
-                  />
-                  <select
-                    value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value as Priority)}
-                    className="bg-slate-950 border border-slate-800 rounded text-xs text-slate-300 px-1.5 py-0.5 focus:outline-none focus:border-slate-700 cursor-pointer"
-                  >
-                    {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
-                      <option key={p} value={p}>
-                        {RARITY_LABEL[p]}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleAdd}
-                    className="bg-amber-500 hover:bg-amber-400 active:bg-amber-500 text-slate-950 font-medium text-xs rounded px-3 py-1 transition-colors shrink-0"
-                  >
-                    Añadir
-                  </button>
-                </div>
-
-                <TemplatesMenu
-                  templates={templates}
-                  onApply={handleApplyTemplate}
-                  onEdit={(t) => setEditingTemplate(t)}
-                  onCreate={() => setEditingTemplate(null)}
-                />
-              </>
-            )}
-
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 focus-within:border-slate-700 transition-colors flex-1 sm:flex-initial sm:w-44 min-w-[160px]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                ref={searchInputRef}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar en todo... (/)"
-                className="flex-1 bg-transparent border-0 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none min-w-0"
-              />
-            </div>
-
-            <select
-              value={filterPriority}
-              onChange={(e) =>
-                setFilterPriority(e.target.value as Priority | 'all')
-              }
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
-            >
-              <option value="all">Prioridad</option>
-              {(Object.keys(RARITY_LABEL) as Priority[]).map((p) => (
-                <option key={p} value={p}>
-                  {RARITY_LABEL[p]}
-                </option>
-              ))}
-            </select>
-
-            {labels.length > 0 && (
-              <select
-                value={filterLabel}
-                onChange={(e) => setFilterLabel(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-700 cursor-pointer"
-              >
-                <option value="all">Etiqueta</option>
-                {labels.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {hasActiveFilters && (
-              <button
-                onClick={() => {
-                  setSearch('');
-                  setFilterPriority('all');
-                  setFilterLabel('all');
-                }}
-                className="text-xs text-slate-500 hover:text-slate-200 px-2 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors"
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-        )}
-
-        {view === 'board' && (
-          <>
-            {columns.length > 0 && (
-              <div className="lg:hidden -mx-4 px-4 mb-3">
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  {columns.map((col, idx) => {
-                    const isActive = idx === activeColumnIdx;
-                    return (
-                      <button
-                        key={col.id}
-                        onClick={() => scrollToColumn(col.id)}
-                        className={`
-                          shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1.5 border
-                          ${
-                            isActive
-                              ? 'bg-slate-800 text-slate-100 border-slate-700'
-                              : 'bg-transparent text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
-                          }
-                        `}
-                      >
-                        <span className="truncate max-w-[80px]">
-                          {col.title}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-500">
-                          {col.cardIds.length}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <div
-                ref={boardScrollRef}
-                className="flex gap-3 overflow-x-auto pb-4 items-start snap-x snap-mandatory lg:snap-none scroll-smooth"
-              >
-                {columns.map((col) => (
-                  <ColumnView
-                    key={col.id}
-                    column={col}
-                    cards={cards}
-                    cardOrder={filteredByColumn[col.id] ?? []}
-                    labels={labels}
-                    members={members}
-                    onArchive={archiveCard}
-                    onOpen={setEditingId}
-                    onUpdateColumn={updateColumn}
-                    onDeleteColumn={deleteColumn}
-                  />
-                ))}
-
-                <div className="w-72 shrink-0 snap-start">
-                  {addingColumn ? (
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
-                      <input
-                        value={newColumnName}
-                        onChange={(e) => setNewColumnName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleAddColumn();
-                          if (e.key === 'Escape') {
-                            setAddingColumn(false);
-                            setNewColumnName('');
-                          }
-                        }}
-                        placeholder="Nombre de columna..."
-                        autoFocus
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-sm mb-2 focus:outline-none focus:border-amber-500/60"
-                      />
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={handleAddColumn}
-                          className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded px-2.5 py-1 text-xs transition-colors"
-                        >
-                          Crear
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAddingColumn(false);
-                            setNewColumnName('');
-                          }}
-                          className="px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setAddingColumn(true)}
-                      className="w-full bg-transparent hover:bg-slate-900 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-3 text-sm text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                      Añadir columna
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <DragOverlay dropAnimation={{ duration: 180 }}>
-                {activeCard ? (
-                  <CardItem
-                    card={activeCard}
-                    labels={labels}
-                    members={members}
-                    onArchive={() => {}}
-                    onOpen={() => {}}
-                    isOverlay
-                  />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </>
-        )}
-
-        {view === 'calendar' && (
-          <CalendarView
-            cards={filteredCards}
-            labels={labels}
-            onOpen={setEditingId}
-            onOpenDay={(ts) => setDayModalDate(ts)}
-          />
-        )}
-      </div>
-
+      {/* ============ MODALES ============ */}
       {editingCard && (
         <CardModal
           card={editingCard}
@@ -1707,10 +1286,7 @@ export default function Home() {
             </div>
 
             <div className="space-y-2 text-sm">
-              <ShortcutRow
-                keys={['Ctrl', 'K']}
-                description="Búsqueda global"
-              />
+              <ShortcutRow keys={['Ctrl', 'K']} description="Búsqueda global" />
               <ShortcutRow keys={['N']} description="Nueva tarjeta" />
               <ShortcutRow keys={['/']} description="Buscar en tablero" />
               <ShortcutRow
@@ -1738,7 +1314,7 @@ export default function Home() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
