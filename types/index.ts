@@ -27,6 +27,11 @@ export interface Attachment {
   createdAt: number;
 }
 
+export interface CardCover {
+  type: 'color' | 'gradient' | 'image';
+  value: string;
+}
+
 export interface Card {
   id: string;
   title: string;
@@ -44,6 +49,7 @@ export interface Card {
   assigneeIds?: string[];
   archived?: boolean;
   archivedAt?: number;
+  cover?: CardCover;
 }
 
 export interface Column {

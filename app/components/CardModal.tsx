@@ -25,6 +25,27 @@ const AVATAR_COLORS = [
   'bg-pink-500',
 ];
 
+const COVER_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#06b6d4',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#64748b',
+];
+
+const COVER_GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+];
+
 function getAvatarColor(email: string): string {
   let hash = 0;
   for (let i = 0; i < email.length; i++) {
@@ -62,7 +83,6 @@ function renderCommentText(text: string) {
   const parts = text.split(urlSplit);
 
   return parts.flatMap((part, i) => {
-    // Si es URL → link dorado
     if (urlTest.test(part)) {
       return (
         <a
@@ -78,13 +98,11 @@ function renderCommentText(text: string) {
       );
     }
 
-    // Dentro de este fragmento, detectar menciones @usuario
     const mentionSplit = /(@[A-Za-z0-9._-]+)/g;
     const mentionTest = /^@[A-Za-z0-9._-]+$/;
     const subParts = part.split(mentionSplit);
 
     return subParts.map((sub, j) => {
-      // Si es mención → chip dorado
       if (mentionTest.test(sub)) {
         return (
           <span
@@ -126,6 +144,21 @@ function isImage(type: string) {
   return type.startsWith('image/');
 }
 
+function getCoverStyle(cover: Card['cover']): React.CSSProperties | null {
+  if (!cover) return null;
+  if (cover.type === 'image') {
+    return {
+      backgroundImage: `url(${cover.value})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
+  if (cover.type === 'gradient') {
+    return { background: cover.value };
+  }
+  return { backgroundColor: cover.value };
+}
+
 export function CardModal({
   card,
   boardId,
@@ -161,6 +194,10 @@ export function CardModal({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Portada (estado local, se guarda con updateCard inmediatamente)
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState('');
 
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [mentionMenu, setMentionMenu] = useState<{
@@ -254,6 +291,25 @@ export function CardModal({
     onAddComment(t);
     setNewComment('');
   };
+
+  // ============ PORTADA ============
+  const setCover = (type: 'color' | 'gradient' | 'image', value: string) => {
+    onSave({ cover: { type, value } });
+    setShowCoverPicker(false);
+  };
+
+  const removeCover = () => {
+    onSave({ cover: undefined });
+    setShowCoverPicker(false);
+  };
+
+  const applyImageUrl = () => {
+    const url = coverImageUrl.trim();
+    if (!url) return;
+    setCover('image', url);
+    setCoverImageUrl('');
+  };
+  // ================================
 
   // ============ MENCIONES ============
   const filteredMembers = useMemo(() => {
@@ -419,6 +475,8 @@ export function CardModal({
     }
   };
 
+  const coverStyle = getCoverStyle(card.cover);
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-stretch sm:items-center justify-center sm:p-4"
@@ -428,6 +486,25 @@ export function CardModal({
         className="bg-slate-900 sm:border border-slate-800 sm:rounded-xl rounded-none w-full max-w-lg shadow-2xl flex flex-col h-screen sm:h-auto sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Portada (si existe) */}
+        {coverStyle && (
+          <div
+            className="h-24 sm:h-28 w-full rounded-t-none sm:rounded-t-xl relative shrink-0"
+            style={coverStyle}
+          >
+            <button
+              type="button"
+              onClick={removeCover}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors backdrop-blur-sm"
+              title="Quitar portada"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         <div className="p-4 sm:p-5 overflow-y-auto flex-1">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-base font-semibold text-slate-100">
@@ -442,6 +519,96 @@ export function CardModal({
               </svg>
             </button>
           </div>
+
+          {/* Botón para añadir portada (si no existe) */}
+          {!coverStyle && (
+            <button
+              type="button"
+              onClick={() => setShowCoverPicker((s) => !s)}
+              className="text-xs text-slate-400 hover:text-slate-200 mb-3 flex items-center gap-1.5 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+              Añadir portada
+            </button>
+          )}
+
+          {/* Picker de portada */}
+          {showCoverPicker && (
+            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 mb-4">
+              {/* Colores */}
+              <div className="mb-3">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
+                  Colores
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  {COVER_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCover('color', c)}
+                      className="w-7 h-7 rounded-md hover:scale-110 transition-transform"
+                      style={{ backgroundColor: c }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Gradientes */}
+              <div className="mb-3">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
+                  Gradientes
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  {COVER_GRADIENTS.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setCover('gradient', g)}
+                      className="w-10 h-7 rounded-md hover:scale-110 transition-transform"
+                      style={{ background: g }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Imagen por URL */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
+                  Imagen (URL)
+                </div>
+                <div className="flex gap-1.5">
+                  <input
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyImageUrl();
+                      }
+                    }}
+                    placeholder="https://..."
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-slate-700 placeholder:text-slate-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyImageUrl}
+                    disabled={!coverImageUrl.trim()}
+                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded px-3 py-1 text-xs transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-600 mt-1">
+                  Pega la URL de una imagen (jpg, png, webp...)
+                </p>
+              </div>
+            </div>
+          )}
 
           <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
             Título
@@ -992,7 +1159,6 @@ export function CardModal({
               )}
 
               <div className="relative bg-slate-900 border border-slate-800 rounded-lg focus-within:border-amber-500/50 transition-colors">
-                {/* Dropdown de menciones */}
                 {mentionMenu.open && filteredMembers.length > 0 && (
                   <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden z-50">
                     <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium border-b border-slate-800">
