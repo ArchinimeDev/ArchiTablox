@@ -3,7 +3,14 @@
 import type { Board } from '@/types';
 import { sounds } from '@/lib/sounds';
 
-type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
+type ViewMode =
+  | 'board'
+  | 'calendar'
+  | 'search'
+  | 'archive'
+  | 'profile'
+  | 'shop'
+  | 'metrics';
 
 interface Props {
   board: Board | undefined;
@@ -30,7 +37,10 @@ export function MobileBottomNav({
     {
       label: 'Tablero',
       active: view === 'board',
-      onClick: () => { sounds.nav(); onSetView('board'); },
+      onClick: () => {
+        sounds.nav();
+        onSetView('board');
+      },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="18" rx="1" />
@@ -41,7 +51,10 @@ export function MobileBottomNav({
     {
       label: 'Buscar',
       active: view === 'search',
-      onClick: () => { sounds.nav(); onSetView('search'); },
+      onClick: () => {
+        sounds.nav();
+        onSetView('search');
+      },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" />
@@ -52,7 +65,10 @@ export function MobileBottomNav({
     {
       label: 'Calendario',
       active: view === 'calendar',
-      onClick: () => { sounds.nav(); onSetView('calendar'); },
+      onClick: () => {
+        sounds.nav();
+        onSetView('calendar');
+      },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -63,7 +79,10 @@ export function MobileBottomNav({
     {
       label: 'Archivados',
       active: view === 'archive',
-      onClick: () => { sounds.nav(); onSetView('archive'); },
+      onClick: () => {
+        sounds.nav();
+        onSetView('archive');
+      },
       badge: archivedCount,
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,12 +93,15 @@ export function MobileBottomNav({
     },
     {
       label: user ? 'Perfil' : 'Entrar',
-      active: view === 'profile' || view === 'shop',
-      onClick: () => { sounds.nav(); onSetView('profile'); },
+      active: view === 'profile' || view === 'shop' || view === 'metrics',
+      onClick: () => {
+        sounds.nav();
+        onSetView('profile');
+      },
       icon: user ? (
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors overflow-hidden ${
-            view === 'profile' || view === 'shop'
+            view === 'profile' || view === 'shop' || view === 'metrics'
               ? 'ring-2 ring-amber-500'
               : 'ring-2 ring-amber-500/40'
           }`}
@@ -94,7 +116,7 @@ export function MobileBottomNav({
           ) : (
             <div
               className={`w-full h-full flex items-center justify-center ${
-                view === 'profile' || view === 'shop'
+                view === 'profile' || view === 'shop' || view === 'metrics'
                   ? 'bg-amber-500 text-gray-950'
                   : 'bg-amber-500/25 text-amber-400'
               }`}
