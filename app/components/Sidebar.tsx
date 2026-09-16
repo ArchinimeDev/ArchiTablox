@@ -5,7 +5,14 @@ import type { Board } from '@/types';
 import { LevelBadge } from './LevelBadge';
 import { sounds } from '@/lib/sounds';
 
-type ViewId = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
+type ViewId =
+  | 'board'
+  | 'calendar'
+  | 'search'
+  | 'archive'
+  | 'profile'
+  | 'shop'
+  | 'metrics';
 
 interface Props {
   boards: Board[];
@@ -13,7 +20,7 @@ interface Props {
   boardRoles: Record<string, string>;
   newBoardIds: string[];
   user: { email: string; name: string | null; avatarUrl: string | null } | null;
-  view: 'board' | 'calendar';
+  view: ViewId;
   archivedCount: number;
   onSwitchBoard: (id: string) => void;
   onSetView: (v: ViewId) => void;
@@ -69,7 +76,10 @@ export function Sidebar({
 
       <div className="flex-1 overflow-y-auto py-3 px-2">
         <button
-          onClick={() => { sounds.open(); onOpenCommand(); }}
+          onClick={() => {
+            sounds.open();
+            onOpenCommand();
+          }}
           className="interactive w-full flex items-center gap-2.5 px-3 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 mb-3"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,7 +99,10 @@ export function Sidebar({
               Mis tableros
             </span>
             <button
-              onClick={() => { sounds.click(); setCreating(true); }}
+              onClick={() => {
+                sounds.click();
+                setCreating(true);
+              }}
               className="interactive text-slate-500 hover:text-amber-400 p-0.5 rounded"
               title="Nuevo tablero"
             >
@@ -192,7 +205,10 @@ export function Sidebar({
           <nav className="space-y-0.5">
             <button
               data-active={view === 'board'}
-              onClick={() => { sounds.nav(); onSetView('board'); }}
+              onClick={() => {
+                sounds.nav();
+                onSetView('board');
+              }}
               className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'board'
                   ? 'bg-slate-800 text-slate-100 font-medium'
@@ -207,7 +223,10 @@ export function Sidebar({
             </button>
             <button
               data-active={view === 'calendar'}
-              onClick={() => { sounds.nav(); onSetView('calendar'); }}
+              onClick={() => {
+                sounds.nav();
+                onSetView('calendar');
+              }}
               className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'calendar'
                   ? 'bg-slate-800 text-slate-100 font-medium'
@@ -221,7 +240,10 @@ export function Sidebar({
               <span className="flex-1 text-left">Calendario</span>
             </button>
             <button
-              onClick={() => { sounds.open(); onOpenArchive(); }}
+              onClick={() => {
+                sounds.open();
+                onOpenArchive();
+              }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -235,6 +257,36 @@ export function Sidebar({
                 </span>
               )}
             </button>
+            <button
+              data-active={view === 'metrics'}
+              onClick={() => {
+                sounds.nav();
+                onSetView('metrics');
+              }}
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                view === 'metrics'
+                  ? 'bg-slate-800 text-slate-100 font-medium'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={view === 'metrics' ? 'text-amber-400' : 'text-slate-500'}
+              >
+                <line x1="3" y1="20" x2="21" y2="20" />
+                <rect x="5" y="12" width="3" height="6" />
+                <rect x="10.5" y="8" width="3" height="10" />
+                <rect x="16" y="4" width="3" height="14" />
+              </svg>
+              <span className="flex-1 text-left">Métricas</span>
+            </button>
           </nav>
         </div>
 
@@ -245,7 +297,10 @@ export function Sidebar({
           </div>
           <nav className="space-y-0.5">
             <button
-              onClick={() => { sounds.nav(); onSetView('profile'); }}
+              onClick={() => {
+                sounds.nav();
+                onSetView('profile');
+              }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -256,7 +311,10 @@ export function Sidebar({
               {user && <LevelBadge size="sm" />}
             </button>
             <button
-              onClick={() => { sounds.nav(); onSetView('shop'); }}
+              onClick={() => {
+                sounds.nav();
+                onSetView('shop');
+              }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -273,7 +331,10 @@ export function Sidebar({
       {/* Footer */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
-          onClick={() => { sounds.open(); onOpenShare(); }}
+          onClick={() => {
+            sounds.open();
+            onOpenShare();
+          }}
           className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -285,7 +346,10 @@ export function Sidebar({
         </button>
 
         <button
-          onClick={() => { sounds.open(); onOpenShortcuts(); }}
+          onClick={() => {
+            sounds.open();
+            onOpenShortcuts();
+          }}
           className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
