@@ -220,13 +220,21 @@ export default function Home() {
     const supabase = createClient();
     const { setAdmin } = useProfile.getState();
 
-    const buildUser = (u: any): UserInfo => ({
-      email: u.email ?? '',
-      avatarUrl:
+    const buildUser = (u: any): UserInfo => {
+      // Supabase + Google guardan el avatar en varios sitios según el proveedor.
+      // Buscamos en orden de prioridad.
+      const avatarUrl =
         u.user_metadata?.avatar_url ??
         u.user_metadata?.picture ??
-        null,
-    });
+        u.identities?.[0]?.identity_data?.avatar_url ??
+        u.identities?.[0]?.identity_data?.picture ??
+        null;
+
+      return {
+        email: u.email ?? '',
+        avatarUrl,
+      };
+    };
 
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {

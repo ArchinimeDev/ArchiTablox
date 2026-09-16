@@ -13,7 +13,6 @@ import {
 import { levelProgress, getLevelTier } from '@/lib/xp';
 import { applyTheme, type ThemeId } from './ThemeProvider';
 import { useToast } from './Toast';
-import { ThemeToggle } from './ThemeToggle';
 import type {
   ProfileTab,
   Cosmetic,
@@ -93,7 +92,7 @@ export function ProfileView({
     ? !!profile.owned[previewCosmetic.id]
     : false;
 
-  // Aplica tema cuando se equipa un cosmético de tipo theme
+  // Equipa + aplica tema si corresponde
   const equipWithTheme = (cosmeticId: string) => {
     const cosmetic = getCosmetic(cosmeticId);
     equip(cosmeticId);
@@ -254,12 +253,10 @@ function ProfileHeader({
 
   // Avatar a mostrar: cosmético custom > Google > inicial
   const renderAvatar = () => {
-    // Si tiene avatar cosmético custom (no default), usarlo
     if (equippedAvatar !== 'av_default') {
       const av = getCosmetic(equippedAvatar);
       return <span className="text-3xl">{av?.value ?? '?'}</span>;
     }
-    // Si no, usar foto de Google si existe
     if (avatarUrl) {
       return (
         <img
@@ -270,7 +267,6 @@ function ProfileHeader({
         />
       );
     }
-    // Fallback: inicial
     return (
       <span className="text-3xl font-bold text-amber-400">
         {userEmail.charAt(0).toUpperCase()}
@@ -362,7 +358,7 @@ function ProfileHeader({
 }
 
 // ============================================================
-// PREVIEW BAR (arreglada)
+// PREVIEW BAR
 // ============================================================
 
 function PreviewBar({
@@ -387,12 +383,10 @@ function PreviewBar({
 
   return (
     <div className="animate-fade-slide-up rounded-xl border-2 border-amber-500/50 bg-amber-500/5 p-3 flex items-center gap-3">
-      {/* Preview box (compacto) */}
       <div className={`w-12 h-12 rounded-lg ${rar.bg} border ${rar.border} flex items-center justify-center shrink-0 overflow-hidden`}>
         <CosmeticIcon cosmetic={cosmetic} />
       </div>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold leading-none">
           Vista previa
@@ -405,7 +399,6 @@ function PreviewBar({
         </div>
       </div>
 
-      {/* Botones */}
       <div className="flex items-center gap-2 shrink-0">
         {owned ? (
           <button
@@ -555,13 +548,6 @@ function ProfileTabContent({
             <path d="m9 18 6-6-6-6" />
           </svg>
         </button>
-      </div>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-3">
-          Tema de la app
-        </div>
-        <ThemeToggle variant="menu" />
       </div>
 
       <button
@@ -813,10 +799,6 @@ function CollectionGrid({
   );
 }
 
-// ============================================================
-// ICONO DE COSMÉTICO (usado en shop, colección y preview)
-// ============================================================
-
 function CosmeticIcon({
   cosmetic,
   size = 'normal',
@@ -860,7 +842,6 @@ function CosmeticIcon({
   }
 
   if (cosmetic.category === 'theme') {
-    // Preview del tema: usa el color de la paleta
     const themeColors: Record<string, string> = {
       cyber: 'linear-gradient(135deg, #0ea5e9 0%, #0a0a14 100%)',
       ocean: 'linear-gradient(135deg, #06b6d4 0%, #031a2e 100%)',

@@ -9,6 +9,10 @@ import {
   type ThemeId,
 } from './ThemeProvider';
 
+// Solo mostramos temas GRATIS en el toggle.
+// Los premium se equipan desde la Tienda.
+const AVAILABLE_THEMES = THEMES.filter((t) => t.free);
+
 interface Props {
   variant?: 'header' | 'menu' | 'sidebar';
   onToggle?: () => void;
@@ -45,7 +49,8 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
     onToggle?.();
   };
 
-  const currentTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
+  const currentTheme =
+    AVAILABLE_THEMES.find((t) => t.id === theme) ?? AVAILABLE_THEMES[0];
 
   if (!mounted) {
     if (variant === 'menu') {
@@ -69,7 +74,7 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
       <div ref={ref} className="relative">
         <button
           onClick={() => setOpen((o) => !o)}
-          className="w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
+          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
         >
           <span className="text-sm leading-none">{currentTheme.icon}</span>
           <span className="flex-1 text-left">{currentTheme.name}</span>
@@ -88,20 +93,18 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
           </svg>
         </button>
         {open && (
-          <div className="absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden p-1">
-            {THEMES.map((t) => {
+          <div className="animate-scale-in absolute bottom-full left-0 right-0 mb-1 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden p-1">
+            {AVAILABLE_THEMES.map((t) => {
               const active = t.id === theme;
               return (
                 <button
                   key={t.id}
                   onClick={() => handleSelect(t.id)}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors text-xs ${
+                  className={`interactive w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs ${
                     active ? 'bg-slate-800' : 'hover:bg-slate-800/60'
                   }`}
                 >
-                  <span className="text-sm leading-none shrink-0">
-                    {t.icon}
-                  </span>
+                  <span className="text-sm leading-none shrink-0">{t.icon}</span>
                   <span className="flex-1 text-left text-slate-200">
                     {t.name}
                   </span>
@@ -129,13 +132,13 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1.5 px-1">
-          {THEMES.map((t) => {
+          {AVAILABLE_THEMES.map((t) => {
             const active = t.id === theme;
             return (
               <button
                 key={t.id}
                 onClick={() => handleSelect(t.id)}
-                className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs transition-all border ${
+                className={`interactive flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-xs border ${
                   active
                     ? 'bg-amber-500/15 text-amber-400 border-amber-500/40'
                     : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:bg-slate-800'
@@ -159,7 +162,7 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
       <button
         onClick={() => setOpen((o) => !o)}
         title="Cambiar tema"
-        className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 sm:w-auto sm:px-2.5 flex items-center justify-center gap-1.5 transition-colors shrink-0"
+        className="interactive bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg w-8 h-8 sm:w-auto sm:px-2.5 flex items-center justify-center gap-1.5 shrink-0"
       >
         <span className="text-sm leading-none">{currentTheme.icon}</span>
         <span className="hidden sm:inline text-xs text-slate-400">
@@ -181,17 +184,17 @@ export function ThemeToggle({ variant = 'header', onToggle }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1.5 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden p-1.5">
+        <div className="animate-scale-in absolute right-0 mt-1.5 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden p-1.5">
           <div className="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
             Elegir tema
           </div>
-          {THEMES.map((t) => {
+          {AVAILABLE_THEMES.map((t) => {
             const active = t.id === theme;
             return (
               <button
                 key={t.id}
                 onClick={() => handleSelect(t.id)}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-colors ${
+                className={`interactive w-full flex items-center gap-3 px-2.5 py-2 rounded-lg ${
                   active ? 'bg-slate-800' : 'hover:bg-slate-800/60'
                 }`}
               >
