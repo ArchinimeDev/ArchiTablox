@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import type { Board, Card } from '@/types';
 import { RARITY_DOT, RARITY_LABEL, RARITY_TEXT } from '@/lib/gamification';
-import { hexWithAlpha } from '@/lib/labels';
 import { dayKey } from '@/lib/dateUtils';
 import { sounds } from '@/lib/sounds';
 
@@ -65,7 +64,6 @@ export function MyCardsView({
 
   const filtered = useMemo(() => {
     const today = dayKey(Date.now());
-    const now = Date.now();
 
     return allAssigned.filter((item) => {
       const { card, columnIsDone } = item;
@@ -145,7 +143,13 @@ export function MyCardsView({
         todayCount++;
       }
     }
-    return { total: allAssigned.length, pending, done, overdue, today: todayCount };
+    return {
+      total: allAssigned.length,
+      pending,
+      done,
+      overdue,
+      today: todayCount,
+    };
   }, [allAssigned]);
 
   if (!userId) {
@@ -165,7 +169,11 @@ export function MyCardsView({
           <p className="text-xs text-slate-500 mt-0.5">
             {counts.total === 0
               ? 'No tienes tarjetas asignadas'
-              : `${counts.total} tarjeta${counts.total === 1 ? '' : 's'} asignada${counts.total === 1 ? '' : 's'} en todos tus tableros`}
+              : `${counts.total} tarjeta${
+                  counts.total === 1 ? '' : 's'
+                } asignada${
+                  counts.total === 1 ? '' : 's'
+                } en todos tus tableros`}
           </p>
         </div>
 
@@ -292,9 +300,6 @@ export function MyCardsView({
                 item={item}
                 onOpen={() => {
                   sounds.open();
-                  if (item.boardId !== boards[0]?.id) {
-                    // Se maneja en el parent
-                  }
                   onOpenCard(item.card.id, item.boardId);
                 }}
                 onGoToBoard={() => {
@@ -378,7 +383,16 @@ function AssignedCardRow({
               className="interactive flex items-center gap-1 hover:text-amber-400 transition-colors"
               title="Ir al tablero"
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="3" y="3" width="7" height="18" rx="1" />
                 <rect x="14" y="3" width="7" height="18" rx="1" />
               </svg>
@@ -395,7 +409,9 @@ function AssignedCardRow({
 
             {/* Priority text */}
             <span className="text-slate-700">·</span>
-            <span className={`font-semibold uppercase tracking-wider ${RARITY_TEXT[card.priority]}`}>
+            <span
+              className={`font-semibold uppercase tracking-wider ${RARITY_TEXT[card.priority]}`}
+            >
               {RARITY_LABEL[card.priority]}
             </span>
           </div>
@@ -407,18 +423,20 @@ function AssignedCardRow({
             </p>
           )}
 
-          {/* Labels */}
-          {(card.labelIds ?? []).length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {/* Placeholder — labels se resuelven mejor desde el board */}
-            </div>
-          )}
-
           {/* Footer icons */}
           <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-500 flex-wrap">
             {subtasks.length > 0 && (
               <span className="flex items-center gap-1" title="Subtareas">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <polyline points="9 11 12 14 22 4" />
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
@@ -429,7 +447,14 @@ function AssignedCardRow({
             )}
             {commentCount > 0 && (
               <span className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
                 <span className="font-mono">{commentCount}</span>
@@ -437,7 +462,16 @@ function AssignedCardRow({
             )}
             {attachmentCount > 0 && (
               <span className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
                 <span className="font-mono">{attachmentCount}</span>
@@ -457,7 +491,16 @@ function AssignedCardRow({
                 : 'text-slate-500'
             }`}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <path d="M16 2v4M8 2v4M3 10h18" />
             </svg>
