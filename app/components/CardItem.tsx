@@ -10,6 +10,7 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  full_name?: string | null;
   avatar_url?: string | null;
 }
 
@@ -255,28 +256,31 @@ export function CardItem({
                   className="flex -space-x-1"
                   title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}
                 >
-                  {assignees.slice(0, 3).map((m) => (
-                    <div
-                      key={m.user_id}
-                      className="w-4 h-4 rounded-full overflow-hidden ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10 shrink-0"
-                      title={m.email}
-                    >
-                      {m.avatar_url ? (
-                        <img
-                          src={m.avatar_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div
-                          className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white`}
-                        >
-                          {m.email.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {assignees.slice(0, 3).map((m) => {
+                    const displayName = m.full_name || m.email.split('@')[0];
+                    return (
+                      <div
+                        key={m.user_id}
+                        className="w-4 h-4 rounded-full overflow-hidden ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10 shrink-0"
+                        title={m.full_name ? `${m.full_name} · ${m.email}` : m.email}
+                      >
+                        {m.avatar_url ? (
+                          <img
+                            src={m.avatar_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div
+                            className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white`}
+                          >
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {assignees.length > 3 && (
                     <div className="w-4 h-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-2 ring-slate-900">
                       +{assignees.length - 3}
