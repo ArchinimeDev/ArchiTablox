@@ -179,7 +179,12 @@ export type CosmeticRarity =
   | 'legendary'
   | 'mythic';
 
-export type CosmeticCategory = 'avatar' | 'frame' | 'background' | 'title';
+export type CosmeticCategory =
+  | 'avatar'
+  | 'frame'
+  | 'background'
+  | 'title'
+  | 'theme';
 
 export interface Cosmetic {
   id: string;
@@ -200,6 +205,7 @@ export interface EquippedCosmetics {
   frame?: string;
   background?: string;
   title?: string;
+  theme?: string;
 }
 
 export interface ProfileStats {

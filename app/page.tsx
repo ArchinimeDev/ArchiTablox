@@ -62,6 +62,11 @@ interface Member {
   role: string;
 }
 
+interface UserInfo {
+  email: string;
+  avatarUrl: string | null;
+}
+
 export default function Home() {
   const boards = useBoard((s) => s.boards);
   const activeBoardId = useBoard((s) => s.activeBoardId);
@@ -135,7 +140,7 @@ export default function Home() {
   const [editingTemplate, setEditingTemplate] = useState<
     CardTemplate | null | undefined
   >(undefined);
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [newBoardIds, setNewBoardIds] = useState<string[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -215,9 +220,17 @@ export default function Home() {
     const supabase = createClient();
     const { setAdmin } = useProfile.getState();
 
+    const buildUser = (u: any): UserInfo => ({
+      email: u.email ?? '',
+      avatarUrl:
+        u.user_metadata?.avatar_url ??
+        u.user_metadata?.picture ??
+        null,
+    });
+
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        setUser({ email: data.user.email ?? '' });
+        setUser(buildUser(data.user));
         setAdmin(data.user.email);
       } else {
         setAdmin(null);
@@ -227,7 +240,7 @@ export default function Home() {
     const { data: sub } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session?.user) {
-          setUser({ email: session.user.email ?? '' });
+          setUser(buildUser(session.user));
           setAdmin(session.user.email);
         } else {
           setUser(null);

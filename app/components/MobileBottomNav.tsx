@@ -7,7 +7,7 @@ type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop'
 interface Props {
   board: Board | undefined;
   view: ViewMode;
-  user: { email: string } | null;
+  user: { email: string; avatarUrl: string | null } | null;
   archivedCount: number;
   onSetView: (v: ViewMode) => void;
 }
@@ -77,13 +77,30 @@ export function MobileBottomNav({
       onClick: () => onSetView('profile'),
       icon: user ? (
         <div
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+          className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors overflow-hidden ${
             view === 'profile' || view === 'shop'
-              ? 'bg-amber-500 text-slate-950'
-              : 'bg-amber-500/25 text-amber-400 ring-2 ring-amber-500/40'
+              ? 'ring-2 ring-amber-500'
+              : 'ring-2 ring-amber-500/40'
           }`}
         >
-          {user.email.charAt(0).toUpperCase()}
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div
+              className={`w-full h-full flex items-center justify-center ${
+                view === 'profile' || view === 'shop'
+                  ? 'bg-amber-500 text-slate-950'
+                  : 'bg-amber-500/25 text-amber-400'
+              }`}
+            >
+              {user.email.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
       ) : (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

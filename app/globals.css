@@ -117,6 +117,100 @@
 }
 
 /* ================================================================
+   TEMAS PREMIUM (tienda)
+   ================================================================ */
+
+[data-theme="cyber"] {
+  --background: #0a0a14;
+  --foreground: #e0f2fe;
+  color-scheme: dark;
+
+  --color-slate-50:  #f0f9ff;
+  --color-slate-100: #e0f2fe;
+  --color-slate-200: #bae6fd;
+  --color-slate-300: #7dd3fc;
+  --color-slate-400: #38bdf8;
+  --color-slate-500: #0ea5e9;
+  --color-slate-600: #0284c7;
+  --color-slate-700: #0369a1;
+  --color-slate-800: #0c4a6e;
+  --color-slate-900: #0a0f2c;
+  --color-slate-950: #0a0a14;
+}
+
+[data-theme="ocean"] {
+  --background: #031a2e;
+  --foreground: #cffafe;
+  color-scheme: dark;
+
+  --color-slate-50:  #ecfeff;
+  --color-slate-100: #cffafe;
+  --color-slate-200: #a5f3fc;
+  --color-slate-300: #67e8f9;
+  --color-slate-400: #22d3ee;
+  --color-slate-500: #06b6d4;
+  --color-slate-600: #0891b2;
+  --color-slate-700: #155e75;
+  --color-slate-800: #164e63;
+  --color-slate-900: #0c2d48;
+  --color-slate-950: #031a2e;
+}
+
+[data-theme="sakura"] {
+  --background: #fff5f7;
+  --foreground: #4a1d2e;
+  color-scheme: light;
+
+  --color-slate-50:  #4a1d2e;
+  --color-slate-100: #831843;
+  --color-slate-200: #9d174d;
+  --color-slate-300: #be185d;
+  --color-slate-400: #db2777;
+  --color-slate-500: #ec4899;
+  --color-slate-600: #f472b6;
+  --color-slate-700: #f9a8d4;
+  --color-slate-800: #fbcfe8;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #fff5f7;
+}
+
+[data-theme="paper"] {
+  --background: #faf6ef;
+  --foreground: #44403c;
+  color-scheme: light;
+
+  --color-slate-50:  #44403c;
+  --color-slate-100: #57534e;
+  --color-slate-200: #78716c;
+  --color-slate-300: #a8a29e;
+  --color-slate-400: #d6d3d1;
+  --color-slate-500: #e7e5e4;
+  --color-slate-600: #f5f5f4;
+  --color-slate-700: #f5f5f4;
+  --color-slate-800: #e7e5e4;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #faf6ef;
+}
+
+[data-theme="vaporwave"] {
+  --background: #1a0b2e;
+  --foreground: #f5d0fe;
+  color-scheme: dark;
+
+  --color-slate-50:  #fae8ff;
+  --color-slate-100: #f5d0fe;
+  --color-slate-200: #f0abfc;
+  --color-slate-300: #e879f9;
+  --color-slate-400: #d946ef;
+  --color-slate-500: #c026d3;
+  --color-slate-600: #a21caf;
+  --color-slate-700: #86198f;
+  --color-slate-800: #4a044e;
+  --color-slate-900: #2a0a4a;
+  --color-slate-950: #1a0b2e;
+}
+
+/* ================================================================
    BASE
    ================================================================ */
 
@@ -140,7 +234,6 @@ body {
   touch-action: manipulation;
   overscroll-behavior-y: none;
 
-  /* Transition global en cambio de tema */
   transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
     color 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -160,7 +253,6 @@ pre {
   color: inherit;
 }
 
-/* Focus ring global en ámbar (sobreescribe el azul del navegador) */
 *:focus-visible {
   outline: 2px solid rgba(var(--accent-rgb), 0.65);
   outline-offset: 2px;
@@ -168,7 +260,6 @@ pre {
   transition: outline-offset 120ms ease-out;
 }
 
-/* Inputs tienen su propio focus, quitamos el outline para que no duplique */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
@@ -207,15 +298,16 @@ select:focus-visible {
 
 [data-theme="light"] *::-webkit-scrollbar-thumb,
 [data-theme="sunset"] *::-webkit-scrollbar-thumb,
-[data-theme="rose"] *::-webkit-scrollbar-thumb {
+[data-theme="rose"] *::-webkit-scrollbar-thumb,
+[data-theme="sakura"] *::-webkit-scrollbar-thumb,
+[data-theme="paper"] *::-webkit-scrollbar-thumb {
   background-color: rgba(100, 116, 139, 0.4);
 }
 
 /* ================================================================
-   KEYFRAMES REUTILIZABLES
+   KEYFRAMES
    ================================================================ */
 
-/* Shake: para errores o WIP limit alcanzado */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-3px); }
@@ -228,7 +320,6 @@ select:focus-visible {
   animation: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
-/* Breathe: pulsación lenta para drop zones */
 @keyframes breathe {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -238,7 +329,6 @@ select:focus-visible {
   animation: breathe 1.6s ease-in-out infinite;
 }
 
-/* Shimmer: skeleton loading */
 @keyframes shimmer {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
@@ -255,7 +345,6 @@ select:focus-visible {
   animation: shimmer 1.5s infinite linear;
 }
 
-/* Fade in inicial */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -265,7 +354,6 @@ select:focus-visible {
   animation: fadeIn 300ms ease-out both;
 }
 
-/* Fade + slide up (para modales que entran) */
 @keyframes fadeSlideUp {
   from {
     opacity: 0;
@@ -281,7 +369,6 @@ select:focus-visible {
   animation: fadeSlideUp 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Scale in (para paletas y popovers) */
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -298,7 +385,6 @@ select:focus-visible {
   transform-origin: top right;
 }
 
-/* Slide in from right (toasts) */
 @keyframes slideInRight {
   from {
     opacity: 0;
@@ -314,7 +400,6 @@ select:focus-visible {
   animation: slideInRight 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Settle: cuando una tarjeta aterriza después de drag */
 @keyframes settle {
   0% { transform: scale(1.02); }
   100% { transform: scale(1); }
@@ -324,7 +409,6 @@ select:focus-visible {
   animation: settle 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Bounce suave para contadores que cambian */
 @keyframes countBounce {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -335,10 +419,9 @@ select:focus-visible {
 }
 
 /* ================================================================
-   UTILIDADES DE INTERACCIÓN
+   UTILIDADES
    ================================================================ */
 
-/* Botón base: hover sube 1px + active se comprime */
 .interactive {
   transition:
     transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -357,7 +440,6 @@ select:focus-visible {
   transition-duration: 80ms;
 }
 
-/* Card hover: elevación más marcada */
 .hover-lift {
   transition:
     transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -372,7 +454,6 @@ select:focus-visible {
     0 4px 8px -4px rgba(0, 0, 0, 0.3);
 }
 
-/* Slide indicator: para items de sidebar */
 .nav-item {
   position: relative;
   transition:
@@ -402,7 +483,6 @@ select:focus-visible {
   transform: translateX(1px);
 }
 
-/* Drag cursor */
 .drag-cursor {
   cursor: grab;
 }
@@ -410,7 +490,6 @@ select:focus-visible {
   cursor: grabbing;
 }
 
-/* No scrollbar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -419,7 +498,6 @@ select:focus-visible {
   scrollbar-width: none;
 }
 
-/* No select durante drag */
 .no-select-during-drag {
   user-select: none;
   -webkit-user-select: none;
@@ -444,7 +522,7 @@ select:focus-visible {
 }
 
 /* ================================================================
-   RESPETO POR REDUCED MOTION
+   REDUCED MOTION
    ================================================================ */
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,7 +8,7 @@ import { XPBar } from './XPBar';
 
 interface Props {
   board: Board | undefined;
-  user: { email: string } | null;
+  user: { email: string; avatarUrl: string | null } | null;
   syncStatus: string;
   onOpenCommand: () => void;
   onOpenShare: () => void;
@@ -97,6 +97,27 @@ export function Topbar({
           onUpdateSettings={onUpdateNotificationSettings}
           onInviteAccepted={onInviteAccepted}
         />
+      )}
+
+      {/* Avatar usuario */}
+      {user && (
+        <div
+          className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-800"
+          title={user.email}
+        >
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="text-[11px] font-bold text-amber-400">
+              {user.email.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
       )}
     </header>
   );

@@ -12,7 +12,7 @@ interface Props {
   activeBoardId: string;
   boardRoles: Record<string, string>;
   newBoardIds: string[];
-  user: { email: string } | null;
+  user: { email: string; avatarUrl: string | null } | null;
   view: 'board' | 'calendar';
   archivedCount: number;
   onSwitchBoard: (id: string) => void;
@@ -239,7 +239,7 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Perfil / Tienda */}
+        {/* Cuenta */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
             Cuenta
@@ -300,8 +300,17 @@ export function Sidebar({
 
         {user ? (
           <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-slate-900/60 mb-1">
-            <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0">
-              {user.email.charAt(0).toUpperCase()}
+            <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0 overflow-hidden">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                user.email.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[11px] text-slate-300 truncate font-medium">

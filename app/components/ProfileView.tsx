@@ -8,10 +8,10 @@ import {
   RARITY_COLORS,
   getCosmetic,
   getFrameClass,
-  getAvatarPreview,
   getBackgroundStyle,
 } from '@/lib/cosmetics';
 import { levelProgress, getLevelTier } from '@/lib/xp';
+import { applyTheme, type ThemeId } from './ThemeProvider';
 import { useToast } from './Toast';
 import { ThemeToggle } from './ThemeToggle';
 import type {
@@ -23,7 +23,7 @@ import type {
 } from '@/types';
 
 interface Props {
-  user: { email: string } | null;
+  user: { email: string; avatarUrl: string | null } | null;
   boardsCount: number;
   initialTab?: ProfileTab;
   onOpenDrawer: () => void;
@@ -37,6 +37,7 @@ const CATEGORY_LABELS: Record<CosmeticCategory, string> = {
   frame: 'Marcos',
   background: 'Fondos',
   title: 'Títulos',
+  theme: 'Temas',
 };
 
 function dayKey(d: Date) {
@@ -76,17 +77,14 @@ export function ProfileView({
   const stats = useStats((s) => s.stats);
   const { toast } = useToast();
 
-  // Sincronizar tab con el prop initialTab
   useEffect(() => {
     if (initialTab) setTab(initialTab);
   }, [initialTab]);
 
-  // Limpiar preview al cambiar de tab
   useEffect(() => {
     setPreviewCosmetic(null);
   }, [tab]);
 
-  // Equipamiento efectivo: real + preview temporal
   const effectiveEquipped: EquippedCosmetics = previewCosmetic
     ? { ...profile.equipped, [previewCosmetic.category]: previewCosmetic.id }
     : profile.equipped;
@@ -95,28 +93,32 @@ export function ProfileView({
     ? !!profile.owned[previewCosmetic.id]
     : false;
 
-  // Handler: comprar el cosmético en preview
+  // Aplica tema cuando se equipa un cosmético de tipo theme
+  const equipWithTheme = (cosmeticId: string) => {
+    const cosmetic = getCosmetic(cosmeticId);
+    equip(cosmeticId);
+    if (cosmetic?.category === 'theme') {
+      applyTheme(cosmetic.value as ThemeId);
+    }
+  };
+
   const handleBuyPreview = () => {
     if (!previewCosmetic) return;
     const cosmetic = previewCosmetic;
-
-    // Si es admin, buy() siempre devuelve true
     const ok = buy(cosmetic.id);
     if (!ok) {
       toast('No tienes suficientes AP', 'error');
       return;
     }
-    // Equipar automáticamente
-    equip(cosmetic.id);
+    equipWithTheme(cosmetic.id);
     toast(`✨ Desbloqueaste: ${cosmetic.name}`, 'success', 3000);
     setPreviewCosmetic(null);
   };
 
-  // Handler: equipar el cosmético en preview (ya owned)
   const handleEquipPreview = () => {
     if (!previewCosmetic) return;
     const cosmetic = previewCosmetic;
-    equip(cosmetic.id);
+    equipWithTheme(cosmetic.id);
     toast(`✓ Equipado: ${cosmetic.name}`, 'success', 2000);
     setPreviewCosmetic(null);
   };
@@ -146,16 +148,17 @@ export function ProfileView({
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in pb-4">
-      {/* ============ HEADER (siempre visible) ============ */}
+      {/* HEADER */}
       <ProfileHeader
         profile={profile}
         equipped={effectiveEquipped}
         userEmail={user.email}
+        avatarUrl={user.avatarUrl}
         isAdmin={isAdmin}
         isPreviewing={!!previewCosmetic}
       />
 
-      {/* ============ PREVIEW BAR ============ */}
+      {/* PREVIEW BAR */}
       {previewCosmetic && (
         <PreviewBar
           cosmetic={previewCosmetic}
@@ -168,7 +171,7 @@ export function ProfileView({
         />
       )}
 
-      {/* ============ TABS ============ */}
+      {/* TABS */}
       <div className="sticky top-0 z-10 -mx-3 px-3 py-2 bg-slate-950/95 backdrop-blur border-b border-slate-800 lg:-mx-6 lg:px-6">
         <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit">
           {(['profile', 'shop', 'collection'] as ProfileTab[]).map((t) => (
@@ -191,7 +194,7 @@ export function ProfileView({
         </div>
       </div>
 
-      {/* ============ TAB PERFIL ============ */}
+      {/* CONTENIDO DE TABS */}
       {tab === 'profile' && (
         <ProfileTabContent
           stats={stats}
@@ -202,7 +205,6 @@ export function ProfileView({
         />
       )}
 
-      {/* ============ TAB TIENDA ============ */}
       {tab === 'shop' && (
         <ShopGrid
           profile={profile}
@@ -212,11 +214,9 @@ export function ProfileView({
         />
       )}
 
-      {/* ============ TAB COLECCIÓN ============ */}
       {tab === 'collection' && (
         <CollectionGrid
           profile={profile}
-          isAdmin={isAdmin}
           previewId={previewCosmetic?.id}
           onPreview={setPreviewCosmetic}
         />
@@ -226,19 +226,21 @@ export function ProfileView({
 }
 
 // ============================================================
-// HEADER DE PERFIL (siempre visible)
+// HEADER
 // ============================================================
 
 function ProfileHeader({
   profile,
   equipped,
   userEmail,
+  avatarUrl,
   isAdmin,
   isPreviewing,
 }: {
   profile: ProfileStats;
   equipped: EquippedCosmetics;
   userEmail: string;
+  avatarUrl: string | null;
   isAdmin: boolean;
   isPreviewing: boolean;
 }) {
@@ -246,8 +248,35 @@ function ProfileHeader({
   const tier = getLevelTier(progress.level);
 
   const equippedTitle = getCosmetic(equipped.title ?? 'ti_none');
+  const equippedAvatar = equipped.avatar ?? 'av_default';
   const frameClass = getFrameClass(equipped.frame);
   const bgStyle = getBackgroundStyle(equipped.background);
+
+  // Avatar a mostrar: cosmético custom > Google > inicial
+  const renderAvatar = () => {
+    // Si tiene avatar cosmético custom (no default), usarlo
+    if (equippedAvatar !== 'av_default') {
+      const av = getCosmetic(equippedAvatar);
+      return <span className="text-3xl">{av?.value ?? '?'}</span>;
+    }
+    // Si no, usar foto de Google si existe
+    if (avatarUrl) {
+      return (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="w-full h-full object-cover rounded-full"
+          referrerPolicy="no-referrer"
+        />
+      );
+    }
+    // Fallback: inicial
+    return (
+      <span className="text-3xl font-bold text-amber-400">
+        {userEmail.charAt(0).toUpperCase()}
+      </span>
+    );
+  };
 
   return (
     <div
@@ -269,10 +298,8 @@ function ProfileHeader({
       </div>
       <div className="bg-slate-900 px-4 pb-4 -mt-12 relative">
         <div className="flex items-end gap-3 mb-3">
-          <div className={`w-20 h-20 rounded-full shrink-0 ${frameClass}`}>
-            <div className="w-full h-full rounded-full bg-amber-500/20 flex items-center justify-center text-3xl font-bold text-amber-400">
-              {getAvatarPreview(equipped.avatar, userEmail)}
-            </div>
+          <div className={`w-20 h-20 rounded-full shrink-0 bg-slate-950 flex items-center justify-center overflow-hidden ${frameClass}`}>
+            {renderAvatar()}
           </div>
           <div className="flex-1 min-w-0 pb-1">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -286,7 +313,7 @@ function ProfileHeader({
               )}
             </div>
             {equippedTitle?.value && (
-              <div className={`text-xs font-medium ${tier.color}`}>
+              <div className={`text-xs font-medium ${tier.color} truncate`}>
                 {equippedTitle.value}
               </div>
             )}
@@ -296,7 +323,6 @@ function ProfileHeader({
           {userEmail}
         </div>
 
-        {/* XP bar */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className={`text-xs font-bold ${tier.color}`}>
@@ -314,7 +340,6 @@ function ProfileHeader({
           </div>
         </div>
 
-        {/* AP */}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800">
             <span className="text-amber-400 text-sm">◆</span>
@@ -337,7 +362,7 @@ function ProfileHeader({
 }
 
 // ============================================================
-// BARRA DE PREVIEW
+// PREVIEW BAR (arreglada)
 // ============================================================
 
 function PreviewBar({
@@ -362,15 +387,17 @@ function PreviewBar({
 
   return (
     <div className="animate-fade-slide-up rounded-xl border-2 border-amber-500/50 bg-amber-500/5 p-3 flex items-center gap-3">
-      <div className={`w-12 h-12 rounded-lg ${rar.bg} border ${rar.border} flex items-center justify-center shrink-0`}>
-        <CosmeticPreview cosmetic={cosmetic} large />
+      {/* Preview box (compacto) */}
+      <div className={`w-12 h-12 rounded-lg ${rar.bg} border ${rar.border} flex items-center justify-center shrink-0 overflow-hidden`}>
+        <CosmeticIcon cosmetic={cosmetic} />
       </div>
 
+      {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">
+        <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold leading-none">
           Vista previa
         </div>
-        <div className="text-sm font-semibold text-slate-100 truncate">
+        <div className="text-sm font-semibold text-slate-100 truncate mt-0.5">
           {cosmetic.name}
         </div>
         <div className={`text-[10px] font-bold ${rar.text}`}>
@@ -378,6 +405,7 @@ function PreviewBar({
         </div>
       </div>
 
+      {/* Botones */}
       <div className="flex items-center gap-2 shrink-0">
         {owned ? (
           <button
@@ -391,17 +419,14 @@ function PreviewBar({
             onClick={onBuy}
             disabled={!canAfford}
             className={`
-              interactive font-semibold rounded-lg px-3 py-2 text-xs
+              interactive font-semibold rounded-lg px-3 py-2 text-xs whitespace-nowrap
               ${canAfford
                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }
             `}
           >
-            {isAdmin
-              ? '∞ Desbloquear'
-              : `Comprar ◆ ${cosmetic.price}`
-            }
+            {isAdmin ? '∞ Desbloquear' : `◆ ${cosmetic.price}`}
           </button>
         )}
         <button
@@ -419,7 +444,7 @@ function PreviewBar({
 }
 
 // ============================================================
-// CONTENIDO DEL TAB PERFIL
+// TAB PERFIL
 // ============================================================
 
 function ProfileTabContent({
@@ -573,6 +598,15 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
+const ALL_CATEGORIES: (CosmeticCategory | 'all')[] = [
+  'all',
+  'avatar',
+  'frame',
+  'background',
+  'title',
+  'theme',
+];
+
 function ShopGrid({
   profile,
   isAdmin,
@@ -598,7 +632,7 @@ function ShopGrid({
   return (
     <>
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-3 px-3">
-        {(['all', 'avatar', 'frame', 'background', 'title'] as const).map((c) => (
+        {ALL_CATEGORIES.map((c) => (
           <button
             key={c}
             onClick={() => setCat(c)}
@@ -641,7 +675,7 @@ function ShopGrid({
                 `}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <CosmeticPreview cosmetic={c} />
+                  <CosmeticIcon cosmetic={c} size="large" />
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${rar.text}`}>
                     {rar.label}
                   </span>
@@ -649,6 +683,11 @@ function ShopGrid({
                 <div className="text-xs font-semibold text-slate-100 truncate">
                   {c.name}
                 </div>
+                {c.description && (
+                  <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                    {c.description}
+                  </div>
+                )}
                 <div className="flex items-center gap-1 mt-1.5">
                   {isAdmin ? (
                     <span className="text-[10px] font-bold text-amber-400">
@@ -674,12 +713,10 @@ function ShopGrid({
 
 function CollectionGrid({
   profile,
-  isAdmin,
   previewId,
   onPreview,
 }: {
   profile: any;
-  isAdmin: boolean;
   previewId: string | undefined;
   onPreview: (c: Cosmetic) => void;
 }) {
@@ -702,7 +739,7 @@ function CollectionGrid({
     <>
       <div className="flex flex-col gap-2">
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-3 px-3">
-          {(['all', 'avatar', 'frame', 'background', 'title'] as const).map((c) => (
+          {ALL_CATEGORIES.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
@@ -753,7 +790,7 @@ function CollectionGrid({
               `}
             >
               <div className={`flex items-center justify-center h-12 ${owned ? '' : 'opacity-40'}`}>
-                <CosmeticPreview cosmetic={c} large />
+                <CosmeticIcon cosmetic={c} size="large" />
               </div>
               <div className={`text-[10px] font-medium text-center mt-1 truncate ${owned ? 'text-slate-200' : 'text-slate-500'}`}>
                 {c.name}
@@ -776,35 +813,39 @@ function CollectionGrid({
   );
 }
 
-function CosmeticPreview({ cosmetic, large = false }: { cosmetic: Cosmetic; large?: boolean }) {
-  const size = large ? 'text-2xl' : 'text-lg';
+// ============================================================
+// ICONO DE COSMÉTICO (usado en shop, colección y preview)
+// ============================================================
+
+function CosmeticIcon({
+  cosmetic,
+  size = 'normal',
+}: {
+  cosmetic: Cosmetic;
+  size?: 'normal' | 'large';
+}) {
+  const emojiSize = size === 'large' ? 'text-2xl' : 'text-lg';
 
   if (cosmetic.category === 'avatar') {
-    return (
-      <span className={size}>
-        {cosmetic.value === 'initial' ? '👤' : cosmetic.value}
-      </span>
-    );
+    return <span className={emojiSize}>{cosmetic.value === 'initial' ? '👤' : cosmetic.value}</span>;
   }
 
   if (cosmetic.category === 'frame') {
     if (cosmetic.value === 'none') {
       return (
-        <div className={`rounded-full border-2 border-dashed border-slate-600 ${large ? 'w-8 h-8' : 'w-7 h-7'}`} />
+        <div className="w-7 h-7 rounded-full border-2 border-dashed border-slate-600" />
       );
     }
     const frameCls = getFrameClass(cosmetic.id);
     return (
-      <div className={`rounded-full ${large ? 'w-8 h-8' : 'w-7 h-7'} ${frameCls}`}>
-        <div className="w-full h-full rounded-full bg-slate-900" />
-      </div>
+      <div className={`w-7 h-7 rounded-full bg-slate-800 ${frameCls}`} />
     );
   }
 
   if (cosmetic.category === 'background') {
     return (
       <div
-        className={`${large ? 'w-14 h-8' : 'w-12 h-7'} rounded-md border border-slate-700`}
+        className="w-12 h-7 rounded-md border border-slate-700"
         style={{ background: cosmetic.value }}
       />
     );
@@ -812,9 +853,26 @@ function CosmeticPreview({ cosmetic, large = false }: { cosmetic: Cosmetic; larg
 
   if (cosmetic.category === 'title') {
     return (
-      <span className={`text-xs font-bold text-slate-300 ${large ? 'text-sm' : ''}`}>
+      <span className="text-[10px] font-bold text-slate-300 truncate max-w-full px-1">
         {cosmetic.value || '—'}
       </span>
+    );
+  }
+
+  if (cosmetic.category === 'theme') {
+    // Preview del tema: usa el color de la paleta
+    const themeColors: Record<string, string> = {
+      cyber: 'linear-gradient(135deg, #0ea5e9 0%, #0a0a14 100%)',
+      ocean: 'linear-gradient(135deg, #06b6d4 0%, #031a2e 100%)',
+      sakura: 'linear-gradient(135deg, #ec4899 0%, #fff5f7 100%)',
+      paper: 'linear-gradient(135deg, #a8a29e 0%, #faf6ef 100%)',
+      vaporwave: 'linear-gradient(135deg, #d946ef 0%, #1a0b2e 100%)',
+    };
+    return (
+      <div
+        className="w-12 h-7 rounded-md border border-slate-700"
+        style={{ background: themeColors[cosmetic.value] ?? 'linear-gradient(135deg, #333, #000)' }}
+      />
     );
   }
 

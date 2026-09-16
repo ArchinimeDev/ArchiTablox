@@ -5,7 +5,7 @@ import { LevelBadge } from './LevelBadge';
 
 interface Props {
   board: Board | undefined;
-  user: { email: string } | null;
+  user: { email: string; avatarUrl: string | null } | null;
   onOpenMenu: () => void;
   onOpenCommand: () => void;
 }
@@ -50,12 +50,21 @@ export function MobileHeader({
 
       {user && (
         <div
-          className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 p-1"
           title={user.email}
         >
-          <div className="w-6 h-6 rounded-full bg-amber-500/25 flex items-center justify-center text-[10px] font-bold text-amber-400">
-            {user.email.charAt(0).toUpperCase()}
-          </div>
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="w-full h-full object-cover rounded-md"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-amber-500/25 flex items-center justify-center text-[10px] font-bold text-amber-400">
+              {user.email.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
       )}
     </header>
