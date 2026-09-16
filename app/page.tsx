@@ -773,6 +773,8 @@ export default function Home() {
           onOpenCard={(id) => setEditingId(id)}
           onUpdateNotificationSettings={updateNotificationSettings}
           onInviteAccepted={handleInviteAccepted}
+          onOpenProfile={() => setView('profile')}
+          onLogout={handleLogout}
         />
 
         <MobileHeader
@@ -1125,7 +1127,7 @@ export default function Home() {
             <div className="max-h-[75vh] overflow-y-auto p-2">
               <div className="mb-2">
                 <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Tableros
+                  Mis tableros
                 </div>
                 {boards.map((b) => {
                   const isActive = b.id === activeBoardId;
@@ -1182,7 +1184,7 @@ export default function Home() {
 
               <div className="pt-2 border-t border-slate-800 mb-2">
                 <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Vista
+                  Vistas
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 px-1">
                   <button
@@ -1200,7 +1202,7 @@ export default function Home() {
                       <rect x="3" y="3" width="7" height="18" rx="1" />
                       <rect x="14" y="3" width="7" height="18" rx="1" />
                     </svg>
-                    Tablero
+                    Kanban
                   </button>
                   <button
                     onClick={() => {

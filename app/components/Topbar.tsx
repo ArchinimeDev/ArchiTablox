@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import type { Board } from '@/types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MembersAvatars } from './MembersAvatars';
@@ -15,6 +16,8 @@ interface Props {
   onOpenCard: (id: string) => void;
   onUpdateNotificationSettings: (patch: any) => void;
   onInviteAccepted: () => void;
+  onOpenProfile: () => void;
+  onLogout: () => void;
 }
 
 export function Topbar({
@@ -26,7 +29,28 @@ export function Topbar({
   onOpenCard,
   onUpdateNotificationSettings,
   onInviteAccepted,
+  onOpenProfile,
+  onLogout,
 }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', onClick);
+      return () => document.removeEventListener('mousedown', onClick);
+    }
+  }, [menuOpen]);
+
+  const displayName = user
+    ? user.name || user.email.split('@')[0]
+    : '';
+
   return (
     <header className="hidden lg:flex h-14 items-center gap-3 px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
       <h1 className="text-sm font-semibold text-slate-100 truncate max-w-[200px]">
@@ -92,22 +116,94 @@ export function Topbar({
         />
       )}
 
+      {/* Avatar con dropdown */}
       {user && (
-        <div
-          className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-800"
-          title={user.name ? `${user.name} · ${user.email}` : user.email}
-        >
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt=""
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="text-[11px] font-bold text-amber-400">
-              {(user.name || user.email).charAt(0).toUpperCase()}
-            </span>
+        <div ref={menuRef} className="relative shrink-0">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center overflow-hidden ring-2 ring-slate-800 hover:ring-slate-700 transition-all"
+            title={displayName}
+          >
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="text-[11px] font-bold text-amber-400">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </button>
+
+          {menuOpen && (
+            <div className="animate-scale-in absolute right-0 mt-1.5 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+              {/* Header con info del usuario */}
+              <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center overflow-hidden ring-2 ring-slate-800 shrink-0">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="text-sm font-bold text-amber-400">
+                        {displayName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-slate-100 truncate">
+                      {displayName}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Opciones */}
+              <div className="p-1.5">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenProfile();
+                  }}
+                  className="interactive w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span className="flex-1 text-left">Mi perfil</span>
+                </button>
+
+                <div className="my-1 border-t border-slate-800" />
+
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (window.confirm('¿Cerrar sesión?')) {
+                      onLogout();
+                    }
+                  }}
+                  className="interactive w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span className="flex-1 text-left">Cerrar sesión</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

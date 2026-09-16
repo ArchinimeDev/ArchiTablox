@@ -80,10 +80,11 @@ export function Sidebar({
           </kbd>
         </button>
 
+        {/* TABLEROS */}
         <div className="mb-3">
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-              Tableros
+              Mis tableros
             </span>
             <button
               onClick={() => setCreating(true)}
@@ -180,9 +181,10 @@ export function Sidebar({
           </nav>
         </div>
 
+        {/* VISTAS */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-            Vista
+            Vistas
           </div>
           <nav className="space-y-0.5">
             <button
@@ -198,7 +200,7 @@ export function Sidebar({
                 <rect x="3" y="3" width="7" height="18" rx="1" />
                 <rect x="14" y="3" width="7" height="18" rx="1" />
               </svg>
-              <span className="flex-1 text-left">Tablero</span>
+              <span className="flex-1 text-left">Kanban</span>
             </button>
             <button
               data-active={view === 'calendar'}
@@ -233,6 +235,7 @@ export function Sidebar({
           </nav>
         </div>
 
+        {/* CUENTA */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
             Cuenta
@@ -264,6 +267,7 @@ export function Sidebar({
         </div>
       </div>
 
+      {/* Footer — solo acciones, sin usuario duplicado */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
           onClick={onOpenShare}
@@ -279,7 +283,7 @@ export function Sidebar({
 
         <button
           onClick={onOpenShortcuts}
-          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
+          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
             <circle cx="12" cy="12" r="10" />
@@ -288,49 +292,17 @@ export function Sidebar({
           Atajos de teclado
         </button>
 
-        <div className="my-2 border-t border-slate-800" />
-
-        {user ? (
-          <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-slate-900/60">
-            <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0 overflow-hidden">
-              {user.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                (user.name || user.email).charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] text-slate-300 truncate font-medium">
-                {user.name || user.email.split('@')[0]}
-              </div>
-              <div className="text-[10px] text-slate-600 truncate">
-                {user.email}
-              </div>
-            </div>
-            <button
-              onClick={onLogout}
-              className="interactive text-slate-500 hover:text-red-400 p-1 rounded shrink-0"
-              title="Cerrar sesión"
+        {/* Solo muestra login si NO hay sesión */}
+        {!user && (
+          <>
+            <div className="my-2 border-t border-slate-800" />
+            <a
+              href="/login"
+              className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg h-8 text-xs"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <a
-            href="/login"
-            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg h-8 text-xs"
-          >
-            Iniciar sesión
-          </a>
+              Iniciar sesión
+            </a>
+          </>
         )}
       </div>
     </aside>
