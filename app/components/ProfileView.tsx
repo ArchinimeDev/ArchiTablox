@@ -6,6 +6,7 @@ import { useAdmin } from '@/store/admin';
 import { useStats } from '@/store/stats';
 import { useSound } from '@/store/sound';
 import { sounds } from '@/lib/sounds';
+import { SOUND_PACKS, type SoundPackId } from '@/lib/sound-packs';
 import {
   COSMETICS,
   RARITY_COLORS,
@@ -40,6 +41,7 @@ const CATEGORY_LABELS: Record<CosmeticCategory, string> = {
   background: 'Fondos',
   title: 'Títulos',
   theme: 'Temas',
+  sound: 'Sonidos',
 };
 
 function dayKey(d: Date) {
@@ -80,9 +82,11 @@ export function ProfileView({
   const stats = useStats((s) => s.stats);
   const soundEnabled = useSound((s) => s.enabled);
   const toggleSound = useSound((s) => s.toggle);
+  const setPack = useSound((s) => s.setPack);
+  const setPreviewPack = useSound((s) => s.setPreviewPack);
   const { toast } = useToast();
 
-  // ✨ NUEVO: preview de tema en tiempo real
+  // ✨ Preview de tema en tiempo real
   useEffect(() => {
     if (previewCosmetic?.category === 'theme') {
       applyTheme(previewCosmetic.value as ThemeId);
@@ -94,13 +98,22 @@ export function ProfileView({
     }
   }, [previewCosmetic, profile.equipped.theme]);
 
+  // ✨ Sincronizar sound pack inicial desde el perfil
+  useEffect(() => {
+    const equippedSound = getCosmetic(profile.equipped.sound ?? '');
+    if (equippedSound?.category === 'sound') {
+      setPack(equippedSound.value as SoundPackId);
+    }
+  }, [profile.equipped.sound, setPack]);
+
   useEffect(() => {
     if (initialTab) setTab(initialTab);
   }, [initialTab]);
 
   useEffect(() => {
     setPreviewCosmetic(null);
-  }, [tab]);
+    setPreviewPack(null);
+  }, [tab, setPreviewPack]);
 
   const effectiveEquipped: EquippedCosmetics = previewCosmetic
     ? { ...profile.equipped, [previewCosmetic.category]: previewCosmetic.id }
@@ -116,16 +129,26 @@ export function ProfileView({
     if (cosmetic?.category === 'theme') {
       applyTheme(cosmetic.value as ThemeId);
     }
+    if (cosmetic?.category === 'sound') {
+      setPack(cosmetic.value as SoundPackId);
+    }
   };
 
-  // ✨ NUEVO: handler de preview con sonido
+  // ✨ Preview con demo para sonidos
   const handlePreview = (c: Cosmetic) => {
-    sounds.preview();
+    if (c.category === 'sound') {
+      const packId = c.value as SoundPackId;
+      setPreviewPack(packId);
+      sounds.demoPack(packId);
+    } else {
+      sounds.preview();
+    }
     setPreviewCosmetic(c);
   };
 
   const handleCancelPreview = () => {
     sounds.cancel();
+    setPreviewPack(null);
     setPreviewCosmetic(null);
   };
 
@@ -142,6 +165,7 @@ export function ProfileView({
     equipWithTheme(cosmetic.id);
     toast(`✨ Desbloqueaste: ${cosmetic.name}`, 'success', 3000);
     setPreviewCosmetic(null);
+    setPreviewPack(null);
   };
 
   const handleEquipPreview = () => {
@@ -151,6 +175,7 @@ export function ProfileView({
     equipWithTheme(cosmetic.id);
     toast(`✓ Equipado: ${cosmetic.name}`, 'success', 2000);
     setPreviewCosmetic(null);
+    setPreviewPack(null);
   };
 
   if (!user) {
@@ -197,12 +222,17 @@ export function ProfileView({
           onBuy={handleBuyPreview}
           onEquip={handleEquipPreview}
           onCancel={handleCancelPreview}
+          onReplay={
+            previewCosmetic.category === 'sound'
+              ? () => sounds.demoPack(previewCosmetic.value as SoundPackId)
+              : undefined
+          }
         />
       )}
 
       <div className="sticky top-0 z-10 -mx-3 px-3 py-2 bg-slate-950/95 backdrop-blur border-b border-slate-800 lg:-mx-6 lg:px-6">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit">
+          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit overflow-x-auto no-scrollbar">
             {(['profile', 'shop', 'collection'] as ProfileTab[]).map((t) => (
               <button
                 key={t}
@@ -211,7 +241,7 @@ export function ProfileView({
                   setTab(t);
                 }}
                 className={`
-                  interactive px-3.5 h-8 rounded-md text-xs font-medium transition-all
+                  interactive shrink-0 px-3.5 h-8 rounded-md text-xs font-medium transition-all
                   ${tab === t
                     ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200'
@@ -225,13 +255,10 @@ export function ProfileView({
             ))}
           </div>
 
-          {/* ✨ NUEVO: botón de mute */}
           <button
             onClick={() => {
               toggleSound();
-              if (!soundEnabled) {
-                setTimeout(() => sounds.click(), 50);
-              }
+              if (!soundEnabled) setTimeout(() => sounds.click(), 50);
             }}
             className={`interactive shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${
               soundEnabled
@@ -435,6 +462,7 @@ function PreviewBar({
   onBuy,
   onEquip,
   onCancel,
+  onReplay,
 }: {
   cosmetic: Cosmetic;
   owned: boolean;
@@ -443,6 +471,7 @@ function PreviewBar({
   onBuy: () => void;
   onEquip: () => void;
   onCancel: () => void;
+  onReplay?: () => void;
 }) {
   const rar = RARITY_COLORS[cosmetic.rarity];
   const canAfford = isAdmin || ap >= (cosmetic.price ?? 0);
@@ -466,6 +495,18 @@ function PreviewBar({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {onReplay && (
+          <button
+            onClick={onReplay}
+            className="interactive text-slate-400 hover:text-amber-400 p-2 rounded-lg border border-slate-800 hover:border-amber-500/50"
+            title="Reproducir de nuevo"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+          </button>
+        )}
         {owned ? (
           <button
             onClick={onEquip}
@@ -503,7 +544,7 @@ function PreviewBar({
 }
 
 // ============================================================
-// TAB CONTENT (perfil)
+// PROFILE TAB
 // ============================================================
 
 function ProfileTabContent({
@@ -667,6 +708,7 @@ const ALL_CATEGORIES: (CosmeticCategory | 'all')[] = [
   'background',
   'title',
   'theme',
+  'sound',
 ];
 
 function ShopGrid({
@@ -949,6 +991,23 @@ function CosmeticIcon({
         className="w-12 h-7 rounded-md border border-slate-700"
         style={{ background: themeColors[cosmetic.value] ?? 'linear-gradient(135deg, #333, #000)' }}
       />
+    );
+  }
+
+  // ✨ SONIDOS
+  if (cosmetic.category === 'sound') {
+    const emojiByPack: Record<string, string> = {
+      default: '🎵',
+      retro: '🕹️',
+      scifi: '🛸',
+      zen: '🍃',
+      arcade: '👾',
+      cyber: '⚡',
+    };
+    return (
+      <span className={emojiSize}>
+        {emojiByPack[cosmetic.value] ?? '🔊'}
+      </span>
     );
   }
 

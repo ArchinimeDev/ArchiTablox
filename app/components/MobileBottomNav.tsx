@@ -1,6 +1,7 @@
 'use client';
 
 import type { Board } from '@/types';
+import { sounds } from '@/lib/sounds';
 
 type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
 
@@ -29,7 +30,7 @@ export function MobileBottomNav({
     {
       label: 'Tablero',
       active: view === 'board',
-      onClick: () => onSetView('board'),
+      onClick: () => { sounds.nav(); onSetView('board'); },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="18" rx="1" />
@@ -40,7 +41,7 @@ export function MobileBottomNav({
     {
       label: 'Buscar',
       active: view === 'search',
-      onClick: () => onSetView('search'),
+      onClick: () => { sounds.nav(); onSetView('search'); },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" />
@@ -51,7 +52,7 @@ export function MobileBottomNav({
     {
       label: 'Calendario',
       active: view === 'calendar',
-      onClick: () => onSetView('calendar'),
+      onClick: () => { sounds.nav(); onSetView('calendar'); },
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -62,7 +63,7 @@ export function MobileBottomNav({
     {
       label: 'Archivados',
       active: view === 'archive',
-      onClick: () => onSetView('archive'),
+      onClick: () => { sounds.nav(); onSetView('archive'); },
       badge: archivedCount,
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,7 +75,7 @@ export function MobileBottomNav({
     {
       label: user ? 'Perfil' : 'Entrar',
       active: view === 'profile' || view === 'shop',
-      onClick: () => onSetView('profile'),
+      onClick: () => { sounds.nav(); onSetView('profile'); },
       icon: user ? (
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors overflow-hidden ${

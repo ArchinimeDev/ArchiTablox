@@ -63,16 +63,20 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'th_sakura',     name: 'Sakura',      description: 'Rosa pastel suave',            category: 'theme', rarity: 'rare',      price: 500,  value: 'sakura' },
   { id: 'th_paper',      name: 'Papel',       description: 'Crema cálido estilo cuaderno', category: 'theme', rarity: 'epic',      price: 800,  value: 'paper' },
   { id: 'th_vaporwave',  name: 'Vaporwave',   description: 'Púrpura y rosa retro',         category: 'theme', rarity: 'legendary', price: 1500, value: 'vaporwave' },
+
+  // ============================================================
+  // SOUND PACKS
+  // ============================================================
+  { id: 'sp_default', name: 'Clásicos',     description: 'Neutro y equilibrado',   category: 'sound', rarity: 'common',    free: true, value: 'default' },
+  { id: 'sp_retro',   name: 'Retro 8-bit',  description: 'Chip-tune estilo NES',   category: 'sound', rarity: 'rare',      price: 300,  value: 'retro'   },
+  { id: 'sp_scifi',   name: 'Sci-Fi',       description: 'Whooshes futuristas',    category: 'sound', rarity: 'rare',      price: 400,  value: 'scifi'   },
+  { id: 'sp_zen',     name: 'Zen',          description: 'Calmado y relajante',    category: 'sound', rarity: 'epic',      price: 600,  value: 'zen'     },
+  { id: 'sp_arcade',  name: 'Arcade',       description: 'Bleeps de videojuego',   category: 'sound', rarity: 'epic',      price: 700,  value: 'arcade'  },
+  { id: 'sp_cyber',   name: 'Cyber',        description: 'Glitches digitales',     category: 'sound', rarity: 'legendary', price: 1200, value: 'cyber'   },
 ];
 
 // ============================================================
 // COSMÉTICOS DESBLOQUEADOS POR NIVEL
-// Fuente única de verdad. La consumen `store/profile.addXP` y
-// `hooks/useXP` para:
-//   1) otorgar el cosmético al subir de nivel
-//   2) mostrar el toast "🎉 Nivel X · Nuevo: ..."
-// Si añades un cosmético con `unlockedByLevel` en COSMETICS,
-// añádelo también aquí para que se otorgue automáticamente.
 // ============================================================
 
 export const COSMETICS_BY_LEVEL: Record<number, string[]> = {

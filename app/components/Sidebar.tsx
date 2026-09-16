@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Board } from '@/types';
 import { LevelBadge } from './LevelBadge';
+import { sounds } from '@/lib/sounds';
 
 type ViewId = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
 
@@ -49,6 +50,7 @@ export function Sidebar({
   const commitCreate = () => {
     const t = newName.trim();
     if (!t) return;
+    sounds.click();
     onCreateBoard(t);
     setNewName('');
     setCreating(false);
@@ -67,7 +69,7 @@ export function Sidebar({
 
       <div className="flex-1 overflow-y-auto py-3 px-2">
         <button
-          onClick={onOpenCommand}
+          onClick={() => { sounds.open(); onOpenCommand(); }}
           className="interactive w-full flex items-center gap-2.5 px-3 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 mb-3"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,7 +89,7 @@ export function Sidebar({
               Mis tableros
             </span>
             <button
-              onClick={() => setCreating(true)}
+              onClick={() => { sounds.click(); setCreating(true); }}
               className="interactive text-slate-500 hover:text-amber-400 p-0.5 rounded"
               title="Nuevo tablero"
             >
@@ -134,6 +136,7 @@ export function Sidebar({
                   key={b.id}
                   data-active={isActive}
                   onClick={() => {
+                    sounds.nav();
                     onSwitchBoard(b.id);
                     onBoardOpened(b.id);
                   }}
@@ -189,7 +192,7 @@ export function Sidebar({
           <nav className="space-y-0.5">
             <button
               data-active={view === 'board'}
-              onClick={() => onSetView('board')}
+              onClick={() => { sounds.nav(); onSetView('board'); }}
               className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'board'
                   ? 'bg-slate-800 text-slate-100 font-medium'
@@ -204,7 +207,7 @@ export function Sidebar({
             </button>
             <button
               data-active={view === 'calendar'}
-              onClick={() => onSetView('calendar')}
+              onClick={() => { sounds.nav(); onSetView('calendar'); }}
               className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                 view === 'calendar'
                   ? 'bg-slate-800 text-slate-100 font-medium'
@@ -218,7 +221,7 @@ export function Sidebar({
               <span className="flex-1 text-left">Calendario</span>
             </button>
             <button
-              onClick={onOpenArchive}
+              onClick={() => { sounds.open(); onOpenArchive(); }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -242,7 +245,7 @@ export function Sidebar({
           </div>
           <nav className="space-y-0.5">
             <button
-              onClick={() => onSetView('profile')}
+              onClick={() => { sounds.nav(); onSetView('profile'); }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -253,7 +256,7 @@ export function Sidebar({
               {user && <LevelBadge size="sm" />}
             </button>
             <button
-              onClick={() => onSetView('shop')}
+              onClick={() => { sounds.nav(); onSetView('shop'); }}
               className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -267,10 +270,10 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer — solo acciones, sin usuario duplicado */}
+      {/* Footer */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
-          onClick={onOpenShare}
+          onClick={() => { sounds.open(); onOpenShare(); }}
           className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -282,7 +285,7 @@ export function Sidebar({
         </button>
 
         <button
-          onClick={onOpenShortcuts}
+          onClick={() => { sounds.open(); onOpenShortcuts(); }}
           className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
@@ -292,7 +295,6 @@ export function Sidebar({
           Atajos de teclado
         </button>
 
-        {/* Solo muestra login si NO hay sesión */}
         {!user && (
           <>
             <div className="my-2 border-t border-slate-800" />

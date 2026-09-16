@@ -26,6 +26,7 @@ const INITIAL: ProfileStats = {
     fr_none: now,
     bg_slate: now,
     ti_none: now,
+    sp_default: now,
     ...Object.fromEntries(FREE_THEME_IDS.map((id) => [id, now])),
   },
   equipped: {
@@ -34,6 +35,7 @@ const INITIAL: ProfileStats = {
     background: 'bg_slate',
     title: 'ti_none',
     theme: 'th_light',
+    sound: 'sp_default',
   },
 };
 
@@ -47,7 +49,7 @@ interface ProfileStore {
   buy: (cosmeticId: string) => boolean;
   equip: (cosmeticId: string) => void;
   unequip: (
-    category: 'avatar' | 'frame' | 'background' | 'title' | 'theme'
+    category: 'avatar' | 'frame' | 'background' | 'title' | 'theme' | 'sound'
   ) => void;
   grant: (cosmeticId: string) => void;
   reset: () => void;
@@ -156,7 +158,7 @@ export const useProfile = create<ProfileStore>()(
     }),
     {
       name: 'architablox-profile',
-      version: 3,
+      version: 4,
       migrate: (persisted: any, version) => {
         const next = persisted ?? {};
 
@@ -171,6 +173,16 @@ export const useProfile = create<ProfileStore>()(
           }
           if (!p.equipped) p.equipped = {};
           if (!p.equipped.theme) p.equipped.theme = 'th_light';
+          next.profile = p;
+        }
+
+        // v4: añadir sound pack por defecto a usuarios existentes
+        if (version < 4) {
+          const p = next.profile ?? {};
+          if (!p.owned) p.owned = {};
+          if (!p.owned.sp_default) p.owned.sp_default = Date.now();
+          if (!p.equipped) p.equipped = {};
+          if (!p.equipped.sound) p.equipped.sound = 'sp_default';
           next.profile = p;
         }
 

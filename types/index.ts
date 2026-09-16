@@ -186,7 +186,8 @@ export type CosmeticCategory =
   | 'frame'
   | 'background'
   | 'title'
-  | 'theme';
+  | 'theme'
+  | 'sound';
 
 export interface Cosmetic {
   id: string;
@@ -208,6 +209,7 @@ export interface EquippedCosmetics {
   background?: string;
   title?: string;
   theme?: string;
+  sound?: string;
 }
 
 export interface ProfileStats {
