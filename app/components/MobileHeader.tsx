@@ -6,7 +6,7 @@ import { NotificationsPanel } from './NotificationsPanel';
 
 interface Props {
   board: Board | undefined;
-  user: { email: string; avatarUrl: string | null } | null;
+  user: { email: string; name: string | null; avatarUrl: string | null } | null;
   onOpenMenu: () => void;
   onOpenCommand: () => void;
   onOpenCard: (id: string) => void;
@@ -27,10 +27,19 @@ export function MobileHeader({
     <header className="lg:hidden h-14 flex items-center gap-1.5 px-3 border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-30">
       <button
         onClick={onOpenMenu}
-        className="interactive w-9 h-9 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0"
+        className="interactive w-9 h-9 rounded-lg overflow-hidden bg-amber-500 hover:bg-amber-400 active:bg-amber-500 flex items-center justify-center text-gray-950 font-black text-sm shrink-0"
         title="Menú"
       >
-        A
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          'A'
+        )}
       </button>
 
       <div className="flex-1 min-w-0">
@@ -77,7 +86,7 @@ export function MobileHeader({
       {user && (
         <div
           className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 p-1"
-          title={user.email}
+          title={user.name ? `${user.name} · ${user.email}` : user.email}
         >
           {user.avatarUrl ? (
             <img
@@ -88,7 +97,7 @@ export function MobileHeader({
             />
           ) : (
             <div className="w-6 h-6 rounded-full bg-amber-500/25 flex items-center justify-center text-[10px] font-bold text-amber-400">
-              {user.email.charAt(0).toUpperCase()}
+              {(user.name || user.email).charAt(0).toUpperCase()}
             </div>
           )}
         </div>

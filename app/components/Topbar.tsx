@@ -8,7 +8,7 @@ import { XPBar } from './XPBar';
 
 interface Props {
   board: Board | undefined;
-  user: { email: string; avatarUrl: string | null } | null;
+  user: { email: string; name: string | null; avatarUrl: string | null } | null;
   syncStatus: string;
   onOpenCommand: () => void;
   onOpenShare: () => void;
@@ -29,15 +29,11 @@ export function Topbar({
 }: Props) {
   return (
     <header className="hidden lg:flex h-14 items-center gap-3 px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
-      {/* Nombre del tablero */}
       <h1 className="text-sm font-semibold text-slate-100 truncate max-w-[200px]">
         {board?.name ?? 'Tablero'}
       </h1>
 
-      {/* Streak + Reputación */}
       {user && <StreakPill />}
-
-      {/* Nivel + XP */}
       {user && <XPBar variant="compact" />}
 
       {board && (
@@ -46,7 +42,6 @@ export function Topbar({
 
       <div className="flex-1" />
 
-      {/* Buscador */}
       <button
         onClick={onOpenCommand}
         className="group flex items-center gap-2.5 h-9 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-500 hover:text-slate-200 transition-all w-72"
@@ -61,7 +56,6 @@ export function Topbar({
         </kbd>
       </button>
 
-      {/* Sync status */}
       {user && (
         <div
           className="flex items-center gap-1.5 text-[10px] text-slate-500 shrink-0"
@@ -89,7 +83,6 @@ export function Topbar({
         </div>
       )}
 
-      {/* Notificaciones */}
       {user && board && (
         <NotificationsPanel
           board={board}
@@ -99,11 +92,10 @@ export function Topbar({
         />
       )}
 
-      {/* Avatar usuario */}
       {user && (
         <div
           className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-800"
-          title={user.email}
+          title={user.name ? `${user.name} · ${user.email}` : user.email}
         >
           {user.avatarUrl ? (
             <img
@@ -114,7 +106,7 @@ export function Topbar({
             />
           ) : (
             <span className="text-[11px] font-bold text-amber-400">
-              {user.email.charAt(0).toUpperCase()}
+              {(user.name || user.email).charAt(0).toUpperCase()}
             </span>
           )}
         </div>

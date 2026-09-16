@@ -11,6 +11,7 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  full_name?: string | null;
   avatar_url?: string | null;
 }
 
@@ -215,7 +216,6 @@ export function CardModal({
   const attachments = card.attachments ?? [];
   const assigneeIds = card.assigneeIds ?? [];
 
-  // Cargar miembros del tablero
   useEffect(() => {
     if (!boardId) return;
 
@@ -292,7 +292,6 @@ export function CardModal({
     setNewComment('');
   };
 
-  // ============ PORTADA ============
   const setCover = (type: 'color' | 'gradient' | 'image', value: string) => {
     onSave({ cover: { type, value } });
     setShowCoverPicker(false);
@@ -309,16 +308,19 @@ export function CardModal({
     setCover('image', url);
     setCoverImageUrl('');
   };
-  // ================================
 
-  // ============ MENCIONES ============
   const filteredMembers = useMemo(() => {
     if (!mentionMenu.open) return [];
     const q = mentionMenu.query.toLowerCase();
     return members
       .filter((m) => {
         const local = m.email.split('@')[0].toLowerCase();
-        return m.email.toLowerCase().includes(q) || local.includes(q);
+        const name = (m.full_name ?? '').toLowerCase().replace(/\s/g, '');
+        return (
+          m.email.toLowerCase().includes(q) ||
+          local.includes(q) ||
+          name.includes(q.replace(/\s/g, ''))
+        );
       })
       .slice(0, 6);
   }, [mentionMenu.open, mentionMenu.query, members]);
@@ -362,8 +364,8 @@ export function CardModal({
     }
   };
 
-  const insertMention = (memberEmail: string) => {
-    const local = memberEmail.split('@')[0];
+  const insertMention = (member: Member) => {
+    const local = member.email.split('@')[0];
     const before = newComment.slice(0, mentionMenu.startIdx);
     const after = newComment.slice(
       mentionMenu.startIdx + mentionMenu.query.length + 1
@@ -405,7 +407,7 @@ export function CardModal({
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         const m = filteredMembers[mentionMenu.selectedIdx];
-        if (m) insertMention(m.email);
+        if (m) insertMention(m);
         return;
       }
       if (e.key === 'Escape') {
@@ -419,7 +421,6 @@ export function CardModal({
       handleAddComment();
     }
   };
-  // ===================================
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -592,7 +593,7 @@ export function CardModal({
                     type="button"
                     onClick={applyImageUrl}
                     disabled={!coverImageUrl.trim()}
-                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded px-3 py-1 text-xs transition-colors"
+                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-gray-950 font-medium rounded px-3 py-1 text-xs transition-colors"
                   >
                     Aplicar
                   </button>
@@ -655,7 +656,6 @@ export function CardModal({
             </div>
           </div>
 
-          {/* ETIQUETAS */}
           <div className="mb-5 pt-4 border-t border-slate-800">
             <div className="flex justify-between items-center mb-2.5">
               <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium">
@@ -754,7 +754,6 @@ export function CardModal({
             </div>
           </div>
 
-          {/* ASIGNADOS */}
           <div className="mb-5 pt-4 border-t border-slate-800">
             <div className="flex justify-between items-center mb-2.5">
               <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium flex items-center gap-2">
@@ -775,6 +774,7 @@ export function CardModal({
               <div className="space-y-1.5">
                 {members.map((m) => {
                   const active = assigneeIds.includes(m.user_id);
+                  const displayName = m.full_name || m.email.split('@')[0];
                   return (
                     <button
                       key={m.user_id}
@@ -798,7 +798,7 @@ export function CardModal({
                           <div
                             className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[11px] font-bold text-white`}
                           >
-                            {m.email.charAt(0).toUpperCase()}
+                            {displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
@@ -808,14 +808,10 @@ export function CardModal({
                             active ? 'text-slate-100' : 'text-slate-300'
                           }`}
                         >
-                          {m.email}
+                          {displayName}
                         </div>
-                        <div className="text-[10px] text-slate-500 capitalize">
-                          {m.role === 'owner'
-                            ? 'Propietario'
-                            : m.role === 'editor'
-                            ? 'Editor'
-                            : 'Lector'}
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {m.email}
                         </div>
                       </div>
                       <div
@@ -835,7 +831,7 @@ export function CardModal({
                             strokeWidth="3.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            className="text-slate-950"
+                            className="text-gray-950"
                           >
                             <path d="M20 6 9 17l-5-5" />
                           </svg>
@@ -848,7 +844,6 @@ export function CardModal({
             )}
           </div>
 
-          {/* ADJUNTOS */}
           <div className="mb-5 pt-4 border-t border-slate-800">
             <div className="flex justify-between items-center mb-2.5">
               <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium flex items-center gap-2">
@@ -993,7 +988,6 @@ export function CardModal({
             )}
           </div>
 
-          {/* SUBTAREAS */}
           <div className="pt-4 border-t border-slate-800 mb-5">
             <div className="flex justify-between items-center mb-2.5">
               <label className="text-[11px] uppercase tracking-wider text-slate-500 font-medium">
@@ -1089,7 +1083,6 @@ export function CardModal({
             </div>
           </div>
 
-          {/* COMENTARIOS */}
           <div className="rounded-xl bg-slate-950/80 border border-slate-800 overflow-hidden">
             <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1172,13 +1165,14 @@ export function CardModal({
                     {filteredMembers.map((m, idx) => {
                       const isSelected = idx === mentionMenu.selectedIdx;
                       const local = m.email.split('@')[0];
+                      const displayName = m.full_name || local;
                       return (
                         <button
                           key={m.user_id}
                           type="button"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            insertMention(m.email);
+                            insertMention(m);
                           }}
                           onMouseEnter={() =>
                             setMentionMenu((prev) => ({
@@ -1202,12 +1196,12 @@ export function CardModal({
                               />
                             ) : (
                               <div className="w-full h-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400">
-                                {m.email.charAt(0).toUpperCase()}
+                                {displayName.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
                           <span className="text-xs text-slate-100 truncate flex-1">
-                            {local}
+                            {displayName}
                           </span>
                           <span className="text-[10px] text-slate-500 truncate">
                             {m.email}
@@ -1235,7 +1229,7 @@ export function CardModal({
                     type="button"
                     onClick={handleAddComment}
                     disabled={!newComment.trim()}
-                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-950 font-medium rounded px-3 py-1 text-xs transition-colors"
+                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-gray-950 font-medium rounded px-3 py-1 text-xs transition-colors"
                   >
                     Enviar
                   </button>
@@ -1270,7 +1264,7 @@ export function CardModal({
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-1.5 text-sm rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium transition-colors"
+              className="px-4 py-1.5 text-sm rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-medium transition-colors"
             >
               Guardar
             </button>

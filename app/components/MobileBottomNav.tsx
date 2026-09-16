@@ -7,7 +7,7 @@ type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop'
 interface Props {
   board: Board | undefined;
   view: ViewMode;
-  user: { email: string; avatarUrl: string | null } | null;
+  user: { email: string; name: string | null; avatarUrl: string | null } | null;
   archivedCount: number;
   onSetView: (v: ViewMode) => void;
 }
@@ -94,11 +94,11 @@ export function MobileBottomNav({
             <div
               className={`w-full h-full flex items-center justify-center ${
                 view === 'profile' || view === 'shop'
-                  ? 'bg-amber-500 text-slate-950'
+                  ? 'bg-amber-500 text-gray-950'
                   : 'bg-amber-500/25 text-amber-400'
               }`}
             >
-              {user.email.charAt(0).toUpperCase()}
+              {(user.name || user.email).charAt(0).toUpperCase()}
             </div>
           )}
         </div>
@@ -127,7 +127,7 @@ export function MobileBottomNav({
             <div className="relative">
               {item.icon}
               {item.badge !== undefined && item.badge > 0 && (
-                <span className="absolute -top-1 -right-2 bg-amber-500 text-slate-950 text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
+                <span className="absolute -top-1 -right-2 bg-amber-500 text-gray-950 text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
                   {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}

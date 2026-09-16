@@ -22,7 +22,7 @@ import type {
 } from '@/types';
 
 interface Props {
-  user: { email: string; avatarUrl: string | null } | null;
+  user: { email: string; name: string | null; avatarUrl: string | null } | null;
   boardsCount: number;
   initialTab?: ProfileTab;
   onOpenDrawer: () => void;
@@ -92,7 +92,6 @@ export function ProfileView({
     ? !!profile.owned[previewCosmetic.id]
     : false;
 
-  // Equipa + aplica tema si corresponde
   const equipWithTheme = (cosmeticId: string) => {
     const cosmetic = getCosmetic(cosmeticId);
     equip(cosmeticId);
@@ -136,7 +135,7 @@ export function ProfileView({
           <p className="text-sm text-slate-400 mb-4">No has iniciado sesión</p>
           <a
             href="/login"
-            className="interactive inline-block bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-6 py-2.5 text-sm"
+            className="interactive inline-block bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg px-6 py-2.5 text-sm"
           >
             Iniciar sesión
           </a>
@@ -147,17 +146,16 @@ export function ProfileView({
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in pb-4">
-      {/* HEADER */}
       <ProfileHeader
         profile={profile}
         equipped={effectiveEquipped}
         userEmail={user.email}
+        userName={user.name}
         avatarUrl={user.avatarUrl}
         isAdmin={isAdmin}
         isPreviewing={!!previewCosmetic}
       />
 
-      {/* PREVIEW BAR */}
       {previewCosmetic && (
         <PreviewBar
           cosmetic={previewCosmetic}
@@ -170,7 +168,6 @@ export function ProfileView({
         />
       )}
 
-      {/* TABS */}
       <div className="sticky top-0 z-10 -mx-3 px-3 py-2 bg-slate-950/95 backdrop-blur border-b border-slate-800 lg:-mx-6 lg:px-6">
         <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit">
           {(['profile', 'shop', 'collection'] as ProfileTab[]).map((t) => (
@@ -193,7 +190,6 @@ export function ProfileView({
         </div>
       </div>
 
-      {/* CONTENIDO DE TABS */}
       {tab === 'profile' && (
         <ProfileTabContent
           stats={stats}
@@ -224,14 +220,11 @@ export function ProfileView({
   );
 }
 
-// ============================================================
-// HEADER
-// ============================================================
-
 function ProfileHeader({
   profile,
   equipped,
   userEmail,
+  userName,
   avatarUrl,
   isAdmin,
   isPreviewing,
@@ -239,6 +232,7 @@ function ProfileHeader({
   profile: ProfileStats;
   equipped: EquippedCosmetics;
   userEmail: string;
+  userName: string | null;
   avatarUrl: string | null;
   isAdmin: boolean;
   isPreviewing: boolean;
@@ -251,7 +245,8 @@ function ProfileHeader({
   const frameClass = getFrameClass(equipped.frame);
   const bgStyle = getBackgroundStyle(equipped.background);
 
-  // Avatar a mostrar: cosmético custom > Google > inicial
+  const displayName = userName || userEmail.split('@')[0];
+
   const renderAvatar = () => {
     if (equippedAvatar !== 'av_default') {
       const av = getCosmetic(equippedAvatar);
@@ -269,7 +264,7 @@ function ProfileHeader({
     }
     return (
       <span className="text-3xl font-bold text-amber-400">
-        {userEmail.charAt(0).toUpperCase()}
+        {displayName.charAt(0).toUpperCase()}
       </span>
     );
   };
@@ -300,7 +295,7 @@ function ProfileHeader({
           <div className="flex-1 min-w-0 pb-1">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <div className="text-base font-bold text-slate-100 truncate">
-                {userEmail.split('@')[0]}
+                {displayName}
               </div>
               {isAdmin && (
                 <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/40 rounded px-1.5 py-0.5 shrink-0">
@@ -357,10 +352,6 @@ function ProfileHeader({
   );
 }
 
-// ============================================================
-// PREVIEW BAR
-// ============================================================
-
 function PreviewBar({
   cosmetic,
   owned,
@@ -403,7 +394,7 @@ function PreviewBar({
         {owned ? (
           <button
             onClick={onEquip}
-            className="interactive bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 py-2 text-xs"
+            className="interactive bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg px-3 py-2 text-xs"
           >
             Equipar
           </button>
@@ -414,7 +405,7 @@ function PreviewBar({
             className={`
               interactive font-semibold rounded-lg px-3 py-2 text-xs whitespace-nowrap
               ${canAfford
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                ? 'bg-amber-500 hover:bg-amber-400 text-gray-950'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }
             `}
@@ -435,10 +426,6 @@ function PreviewBar({
     </div>
   );
 }
-
-// ============================================================
-// TAB PERFIL
-// ============================================================
 
 function ProfileTabContent({
   stats,
@@ -566,10 +553,6 @@ function ProfileTabContent({
     </>
   );
 }
-
-// ============================================================
-// SUB-COMPONENTES
-// ============================================================
 
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -843,6 +826,12 @@ function CosmeticIcon({
 
   if (cosmetic.category === 'theme') {
     const themeColors: Record<string, string> = {
+      light: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      dark: 'linear-gradient(135deg, #1e293b 0%, #0a0a0a 100%)',
+      midnight: 'linear-gradient(135deg, #4f46e5 0%, #0a0e27 100%)',
+      forest: 'linear-gradient(135deg, #22c55e 0%, #0a1a12 100%)',
+      sunset: 'linear-gradient(135deg, #f97316 0%, #fef3e2 100%)',
+      rose: 'linear-gradient(135deg, #f43f5e 0%, #fff1f5 100%)',
       cyber: 'linear-gradient(135deg, #0ea5e9 0%, #0a0a14 100%)',
       ocean: 'linear-gradient(135deg, #06b6d4 0%, #031a2e 100%)',
       sakura: 'linear-gradient(135deg, #ec4899 0%, #fff5f7 100%)',

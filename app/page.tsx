@@ -27,7 +27,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useSyncBoards } from './hooks/useSyncBoards';
 import { useXP } from '@/hooks/useXP';
 
-// Componentes
 import { ColumnView } from './components/ColumnView';
 import { CardItem } from './components/CardItem';
 import { CardModal } from './components/CardModal';
@@ -42,7 +41,6 @@ import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { CommandPalette } from './components/CommandPalette';
 
-// Layout
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { MobileHeader } from './components/MobileHeader';
@@ -59,10 +57,13 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
 }
 
 interface UserInfo {
   email: string;
+  name: string | null;
   avatarUrl: string | null;
 }
 
@@ -118,6 +119,36 @@ function extractAvatarUrl(u: any): string | null {
   return null;
 }
 
+// ============================================================
+// Extracción robusta del nombre de Google
+// ============================================================
+function extractName(u: any): string | null {
+  const md = u?.user_metadata ?? {};
+  const raw = u?.raw_user_meta_data ?? {};
+
+  const candidates = [
+    md.full_name,
+    md.name,
+    md.given_name,
+    md.display_name,
+    raw.full_name,
+    raw.name,
+    raw.given_name,
+    raw.display_name,
+  ];
+
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim();
+  }
+
+  const email = u?.email as string | undefined;
+  if (email) {
+    const local = email.split('@')[0];
+    if (local) return local;
+  }
+  return null;
+}
+
 export default function Home() {
   const boards = useBoard((s) => s.boards);
   const activeBoardId = useBoard((s) => s.activeBoardId);
@@ -168,7 +199,6 @@ export default function Home() {
     boardRoles,
   } = useSyncBoards();
 
-  // Sistema de XP
   useXP();
 
   const [mounted, setMounted] = useState(false);
@@ -241,7 +271,6 @@ export default function Home() {
     }
   }, [view]);
 
-  // Cargar miembros del tablero activo
   useEffect(() => {
     if (!activeBoardId || !userId) return;
 
@@ -273,18 +302,21 @@ export default function Home() {
 
     const buildUser = (u: any): UserInfo => {
       const avatarUrl = extractAvatarUrl(u);
+      const name = extractName(u);
 
-      // Logs de diagnóstico (temporalmente activos siempre)
       console.log('═══ [auth] DIAGNÓSTICO ═══');
       console.log('email:', u?.email);
-      console.log('user_metadata:', JSON.stringify(u?.user_metadata ?? {}, null, 2));
-      console.log('raw_user_meta_data:', JSON.stringify(u?.raw_user_meta_data ?? {}, null, 2));
-      console.log('identities:', JSON.stringify(u?.identities ?? [], null, 2));
+      console.log('name extraído:', name);
+      console.log(
+        'user_metadata:',
+        JSON.stringify(u?.user_metadata ?? {}, null, 2)
+      );
       console.log('avatarUrl extraído:', avatarUrl);
       console.log('═══════════════════════════');
 
       return {
         email: u?.email ?? '',
+        name,
         avatarUrl,
       };
     };
@@ -402,8 +434,7 @@ export default function Home() {
         if (showShare) return setShowShare(false);
         if (showMobileMenu) return setShowMobileMenu(false);
         if (dayModalDate !== null) return setDayModalDate(null);
-        if (editingTemplate !== undefined)
-          return setEditingTemplate(undefined);
+        if (editingTemplate !== undefined) return setEditingTemplate(undefined);
         if (addingColumn) {
           setAddingColumn(false);
           setNewColumnName('');
@@ -462,9 +493,7 @@ export default function Home() {
     showCommand,
     view,
   ]);
-  // ==========================================
 
-  // ============ BÚSQUEDA ============
   const cardMatchesQuery = useCallback(
     (c: CardType, q: string): boolean => {
       if (!q) return true;
@@ -494,7 +523,10 @@ export default function Home() {
       if (
         assignees.some((uid) => {
           const member = members.find((m) => m.user_id === uid);
-          return member?.email.toLowerCase().includes(lowerQ);
+          return (
+            member?.email.toLowerCase().includes(lowerQ) ||
+            (member?.full_name ?? '').toLowerCase().includes(lowerQ)
+          );
         })
       ) {
         return true;
@@ -623,7 +655,6 @@ export default function Home() {
     }
   };
 
-  // ============ MENCIONES EN COMENTARIOS ============
   const handleAddCommentWithMentions = async (text: string) => {
     if (!editingCard || !activeBoard || !user) {
       if (editingCard) addComment(editingCard.id, text);
@@ -642,7 +673,8 @@ export default function Home() {
 
     const mentionedUsers = members.filter((m) => {
       const local = m.email.split('@')[0].toLowerCase();
-      return mentionedLocals.has(local);
+      const name = (m.full_name ?? '').toLowerCase().replace(/\s/g, '');
+      return mentionedLocals.has(local) || mentionedLocals.has(name);
     });
 
     const toNotify = mentionedUsers.filter((m) => m.email !== user.email);
@@ -659,7 +691,7 @@ export default function Home() {
           data: {
             cardTitle: editingCard.title,
             boardName: activeBoard.name,
-            fromUser: user.email,
+            fromUser: user.name || user.email,
             commentText: preview,
           },
         });
@@ -668,7 +700,6 @@ export default function Home() {
       }
     }
   };
-  // ====================================================
 
   const handleCreateAndAssignLabel = (name: string, color: string) => {
     if (editingId) {
@@ -696,7 +727,7 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-base animate-pulse">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-gray-950 font-black text-base animate-pulse">
             A
           </div>
           <span className="text-sm text-slate-500">Cargando...</span>
@@ -713,7 +744,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
-      {/* SIDEBAR */}
       <Sidebar
         boards={boards}
         activeBoardId={activeBoardId}
@@ -734,7 +764,6 @@ export default function Home() {
       />
 
       <div className="lg:pl-64 flex flex-col min-h-screen">
-        {/* Topbar (PC) */}
         <Topbar
           board={activeBoard}
           user={user}
@@ -746,7 +775,6 @@ export default function Home() {
           onInviteAccepted={handleInviteAccepted}
         />
 
-        {/* MobileHeader */}
         <MobileHeader
           board={activeBoard}
           user={user}
@@ -757,7 +785,6 @@ export default function Home() {
           onInviteAccepted={handleInviteAccepted}
         />
 
-        {/* Banner de invitaciones */}
         {user && (
           <WelcomeInvitesBanner
             userId={userId}
@@ -765,9 +792,7 @@ export default function Home() {
           />
         )}
 
-        {/* MAIN */}
         <main className="flex-1 px-3 sm:px-4 lg:px-6 py-4 pb-24 lg:pb-6">
-          {/* Toolbar (board) */}
           {showBoardToolbar && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 h-10 flex-1 min-w-[240px] focus-within:border-slate-700 transition-colors">
@@ -796,7 +821,7 @@ export default function Home() {
                 <button
                   onClick={handleAdd}
                   disabled={!newTitle.trim()}
-                  className="interactive bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold text-xs rounded px-3 py-1.5 shrink-0"
+                  className="interactive bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-gray-950 font-semibold text-xs rounded px-3 py-1.5 shrink-0"
                 >
                   Añadir
                 </button>
@@ -880,7 +905,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISTA TABLERO */}
           {view === 'board' && (
             <>
               {columns.length > 0 && (
@@ -956,7 +980,7 @@ export default function Home() {
                         <div className="flex gap-2">
                           <button
                             onClick={handleAddColumn}
-                            className="interactive flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg px-3 py-1.5 text-xs"
+                            className="interactive flex-1 bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg px-3 py-1.5 text-xs"
                           >
                             Crear
                           </button>
@@ -1001,7 +1025,6 @@ export default function Home() {
             </>
           )}
 
-          {/* VISTA CALENDARIO */}
           {view === 'calendar' && (
             <CalendarView
               cards={filteredCards}
@@ -1011,7 +1034,6 @@ export default function Home() {
             />
           )}
 
-          {/* VISTA BUSCAR (MÓVIL) */}
           {view === 'search' && (
             <MobileSearchView
               search={search}
@@ -1022,7 +1044,6 @@ export default function Home() {
             />
           )}
 
-          {/* VISTA ARCHIVADOS (MÓVIL) */}
           {view === 'archive' && (
             <MobileArchiveView
               archivedCards={archivedCards}
@@ -1035,7 +1056,6 @@ export default function Home() {
             />
           )}
 
-          {/* VISTA PERFIL / TIENDA */}
           {(view === 'profile' || view === 'shop') && (
             <ProfileView
               user={user}
@@ -1049,7 +1069,6 @@ export default function Home() {
           )}
         </main>
 
-        {/* Bottom nav (Móvil) */}
         <MobileBottomNav
           board={activeBoard}
           view={view}
@@ -1059,7 +1078,6 @@ export default function Home() {
         />
       </div>
 
-      {/* DRAWER MÓVIL */}
       {isMobile && showMobileMenu && (
         <div
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 px-3 overflow-y-auto pb-6 animate-fade-in"
@@ -1071,12 +1089,21 @@ export default function Home() {
           >
             <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">
-                  A
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-amber-500 flex items-center justify-center text-gray-950 font-black text-sm shrink-0">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    'A'
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-100">
-                    ArchiTablox
+                  <div className="text-sm font-semibold text-slate-100 truncate">
+                    {user?.name || 'ArchiTablox'}
                   </div>
                   {user && (
                     <div className="text-[10px] text-slate-500 truncate max-w-[180px]">
@@ -1215,7 +1242,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODALES */}
       {editingCard && (
         <CardModal
           card={editingCard}

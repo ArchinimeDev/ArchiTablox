@@ -11,7 +11,7 @@ interface Props {
   activeBoardId: string;
   boardRoles: Record<string, string>;
   newBoardIds: string[];
-  user: { email: string; avatarUrl: string | null } | null;
+  user: { email: string; name: string | null; avatarUrl: string | null } | null;
   view: 'board' | 'calendar';
   archivedCount: number;
   onSwitchBoard: (id: string) => void;
@@ -56,9 +56,8 @@ export function Sidebar({
 
   return (
     <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-64 flex-col bg-slate-950 border-r border-slate-800 z-40">
-      {/* Logo */}
       <div className="h-14 flex items-center gap-2.5 px-4 border-b border-slate-800 shrink-0">
-        <div className="interactive w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0 cursor-pointer">
+        <div className="interactive w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-gray-950 font-black text-sm shrink-0 cursor-pointer">
           A
         </div>
         <span className="text-sm font-bold text-slate-100 truncate">
@@ -66,9 +65,7 @@ export function Sidebar({
         </span>
       </div>
 
-      {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto py-3 px-2">
-        {/* Buscar */}
         <button
           onClick={onOpenCommand}
           className="interactive w-full flex items-center gap-2.5 px-3 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 mb-3"
@@ -83,7 +80,6 @@ export function Sidebar({
           </kbd>
         </button>
 
-        {/* Tableros */}
         <div className="mb-3">
           <div className="flex items-center justify-between px-2 mb-1">
             <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
@@ -118,7 +114,7 @@ export function Sidebar({
               />
               <button
                 onClick={commitCreate}
-                className="interactive bg-amber-500 hover:bg-amber-400 text-slate-950 font-medium rounded px-2 text-xs"
+                className="interactive bg-amber-500 hover:bg-amber-400 text-gray-950 font-medium rounded px-2 text-xs"
               >
                 ✓
               </button>
@@ -184,7 +180,6 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Vistas */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
             Vista
@@ -238,7 +233,6 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Cuenta */}
         <div className="mb-3">
           <div className="px-2 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
             Cuenta
@@ -270,7 +264,6 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
           onClick={onOpenShare}
@@ -308,12 +301,12 @@ export function Sidebar({
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                user.email.charAt(0).toUpperCase()
+                (user.name || user.email).charAt(0).toUpperCase()
               )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[11px] text-slate-300 truncate font-medium">
-                {user.email.split('@')[0]}
+                {user.name || user.email.split('@')[0]}
               </div>
               <div className="text-[10px] text-slate-600 truncate">
                 {user.email}
@@ -334,7 +327,7 @@ export function Sidebar({
         ) : (
           <a
             href="/login"
-            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg h-8 text-xs"
+            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded-lg h-8 text-xs"
           >
             Iniciar sesión
           </a>

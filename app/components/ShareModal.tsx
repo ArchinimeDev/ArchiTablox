@@ -16,6 +16,7 @@ interface Member {
   email: string;
   role: 'owner' | 'editor' | 'viewer';
   created_at: string;
+  full_name?: string | null;
   avatar_url?: string | null;
 }
 
@@ -200,7 +201,7 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
   };
 
   const handleRemoveMember = async (member: Member) => {
-    if (!window.confirm(`¿Quitar a ${member.email} del tablero?`)) return;
+    if (!window.confirm(`¿Quitar a ${member.full_name || member.email} del tablero?`)) return;
     const supabase = createClient();
     const { data, error } = await supabase.rpc('remove_board_member', {
       p_member_id: member.id,
@@ -316,7 +317,7 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                 <button
                   onClick={handleInvite}
                   disabled={sending}
-                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded-lg px-4 py-2 text-sm transition-colors"
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-gray-950 font-medium rounded-lg px-4 py-2 text-sm transition-colors"
                 >
                   {sending ? '...' : 'Invitar'}
                 </button>
@@ -358,8 +359,8 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                       onClick={copyInviteLink}
                       className={`text-xs font-medium rounded px-3 py-1.5 transition-colors shrink-0 ${
                         copied
-                          ? 'bg-emerald-500 text-slate-950'
-                          : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                          ? 'bg-emerald-500 text-gray-950'
+                          : 'bg-amber-500 hover:bg-amber-400 text-gray-950'
                       }`}
                     >
                       {copied ? '✓ Copiado' : 'Copiar'}
@@ -392,6 +393,7 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                 {members.map((m) => {
                   const isMe = m.user_id === currentUserId;
                   const isOwnerMember = m.role === 'owner';
+                  const displayName = m.full_name || m.email.split('@')[0];
                   return (
                     <div
                       key={m.id}
@@ -406,15 +408,18 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          m.email.charAt(0).toUpperCase()
+                          displayName.charAt(0).toUpperCase()
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-slate-200 truncate">
-                          {m.email}
+                          {displayName}
                           {isMe && (
                             <span className="text-slate-500"> (tú)</span>
                           )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {m.email}
                         </div>
                       </div>
 
