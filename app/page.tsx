@@ -52,7 +52,13 @@ import { ProfileView } from './components/ProfileView';
 
 import { sendEmail } from '@/lib/notify';
 
-type ViewMode = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
+type ViewMode =
+  | 'board'
+  | 'calendar'
+  | 'search'
+  | 'archive'
+  | 'profile'
+  | 'shop';
 
 interface Member {
   user_id: string;
@@ -68,9 +74,6 @@ interface UserInfo {
   avatarUrl: string | null;
 }
 
-// ============================================================
-// Extracción robusta del avatar de Supabase/Google
-// ============================================================
 function extractAvatarUrl(u: any): string | null {
   const md = u?.user_metadata ?? {};
   const raw = u?.raw_user_meta_data ?? {};
@@ -120,9 +123,6 @@ function extractAvatarUrl(u: any): string | null {
   return null;
 }
 
-// ============================================================
-// Extracción robusta del nombre de Google
-// ============================================================
 function extractName(u: any): string | null {
   const md = u?.user_metadata ?? {};
   const raw = u?.raw_user_meta_data ?? {};
@@ -228,6 +228,11 @@ export default function Home() {
   const [newBoardIds, setNewBoardIds] = useState<string[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [showCommand, setShowCommand] = useState(false);
+  // ★ NUEVO: apertura pendiente de tarjeta tras cambiar de tablero
+  const [pendingOpen, setPendingOpen] = useState<{
+    cardId: string;
+    boardId: string;
+  } | null>(null);
 
   const newCardInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -296,6 +301,16 @@ export default function Home() {
         setMembers((data as Member[]) ?? []);
       });
   }, [activeBoardId, userId]);
+
+  // ★ Resuelve aperturas pendientes (desde CommandPalette u otros).
+  // Se dispara cuando el board activo ya es el destino y la tarjeta existe.
+  useEffect(() => {
+    if (!pendingOpen) return;
+    if (pendingOpen.boardId !== activeBoardId) return;
+    if (!cards[pendingOpen.cardId]) return;
+    setEditingId(pendingOpen.cardId);
+    setPendingOpen(null);
+  }, [pendingOpen, activeBoardId, cards]);
 
   // ============ AUTENTICACIÓN + ADMIN ============
   useEffect(() => {
@@ -610,11 +625,7 @@ export default function Home() {
       if (currentCol === overColumn.id) return;
       const ok = moveCard(cardId, overColumn.id);
       if (!ok) {
-        toast(
-          'La columna destino está llena (límite WIP)',
-          'error',
-          2500
-        );
+        toast('La columna destino está llena (límite WIP)', 'error', 2500);
       }
       return;
     }
@@ -651,11 +662,7 @@ export default function Home() {
       const insertAt = insertBefore ? overIndex : overIndex + 1;
       const ok = moveCard(cardId, targetCol.id, insertAt);
       if (!ok) {
-        toast(
-          'La columna destino está llena (límite WIP)',
-          'error',
-          2500
-        );
+        toast('La columna destino está llena (límite WIP)', 'error', 2500);
       }
     }
   };
@@ -693,6 +700,8 @@ export default function Home() {
         await sendEmail({
           to: m.email,
           type: 'comment',
+          // ★ NUEVO: boardId es obligatorio para que el servidor valide membership
+          boardId: activeBoard.id,
           data: {
             cardTitle: editingCard.title,
             boardName: activeBoard.name,
@@ -1160,7 +1169,9 @@ export default function Home() {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={isActive ? 'text-amber-400' : 'text-slate-500'}
+                        className={
+                          isActive ? 'text-amber-400' : 'text-slate-500'
+                        }
                       >
                         <rect x="3" y="3" width="7" height="18" rx="1" />
                         <rect x="14" y="3" width="7" height="18" rx="1" />
@@ -1309,7 +1320,15 @@ export default function Home() {
         onClose={() => setShowCommand(false)}
         boards={boards}
         activeBoardId={activeBoardId}
-        onOpenCard={(cardId) => setEditingId(cardId)}
+        onOpenCard={(cardId, boardId) => {
+          // ★ Si es otro tablero, cambia y encola la apertura
+          if (boardId !== activeBoardId) {
+            switchBoard(boardId);
+            setPendingOpen({ cardId, boardId });
+          } else {
+            setEditingId(cardId);
+          }
+        }}
         onSwitchBoard={switchBoard}
       />
 

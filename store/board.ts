@@ -872,6 +872,7 @@ export const useBoard = create<Store>()(
           }))
         ),
 
+      // ★ FIX: bloquear borrado si no hay columna destino para las tarjetas
       deleteColumn: (columnId) =>
         set((state) =>
           withActiveBoard(state, (board) => {
@@ -881,6 +882,15 @@ export const useBoard = create<Store>()(
             const fallback = board.columns.find(
               (c) => c.id !== columnId && !c.isDone
             );
+
+            // Si tiene tarjetas y no hay destino, no borramos nada.
+            if (col.cardIds.length > 0 && !fallback) {
+              console.warn(
+                '[board] deleteColumn bloqueado: no hay columna destino para las tarjetas'
+              );
+              return board;
+            }
+
             const newCards = { ...board.cards };
             if (fallback) {
               for (const cardId of col.cardIds) {

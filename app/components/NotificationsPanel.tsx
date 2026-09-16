@@ -75,12 +75,9 @@ export function NotificationsPanel({
     if (data) setInvites(data as PendingInvite[]);
   };
 
-  useEffect(() => {
-    loadInvites();
-    const interval = setInterval(loadInvites, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
+  // ★ SIMPLIFICADO: solo cargar cuando el panel se abre.
+  // (El polling de 30s se elimina; WelcomeInvitesBanner y Realtime se
+  // encargan del resto.)
   useEffect(() => {
     if (open) loadInvites();
   }, [open]);
@@ -106,7 +103,6 @@ export function NotificationsPanel({
     }
   }, [open]);
 
-  // Notificaciones del navegador
   useEffect(() => {
     if (!settings.enabled) return;
     if (!settings.browserNotifications) return;
@@ -470,7 +466,8 @@ export function NotificationsPanel({
                               </b>
                             </p>
                             <p className="text-[10px] text-slate-500 mt-0.5">
-                              Rol: {ROLE_LABEL[inv.invite_role] ?? inv.invite_role}
+                              Rol:{' '}
+                              {ROLE_LABEL[inv.invite_role] ?? inv.invite_role}
                             </p>
                           </div>
                         </div>
@@ -480,7 +477,9 @@ export function NotificationsPanel({
                             disabled={processingInvite === inv.invite_id}
                             className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-medium rounded px-3 py-1.5 text-xs transition-colors"
                           >
-                            {processingInvite === inv.invite_id ? '...' : 'Aceptar'}
+                            {processingInvite === inv.invite_id
+                              ? '...'
+                              : 'Aceptar'}
                           </button>
                           <button
                             onClick={() => handleRejectInvite(inv)}
@@ -535,7 +534,11 @@ export function NotificationsPanel({
                     </Section>
                   )}
                   {upcoming.length > 0 && (
-                    <Section title="Mañana" count={upcoming.length} accent="slate">
+                    <Section
+                      title="Mañana"
+                      count={upcoming.length}
+                      accent="slate"
+                    >
                       {upcoming.map((d) => (
                         <CardRow
                           key={d.card.id}

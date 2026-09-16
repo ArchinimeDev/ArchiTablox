@@ -5,7 +5,7 @@ import { useBoard } from '@/store/board';
 import { useProfile } from '@/store/profile';
 import { useStats } from '@/store/stats';
 import { XP_VALUES, AP_VALUES, getStreakMultiplier } from '@/lib/xp';
-import { getCosmetic } from '@/lib/cosmetics';
+import { getCosmetic, COSMETICS_BY_LEVEL } from '@/lib/cosmetics';
 import { useToast } from '../app/components/Toast';
 import type { ActivityType, TrackAction } from '@/types';
 
@@ -18,19 +18,8 @@ const ACTION_MAP: Partial<Record<ActivityType, TrackAction>> = {
   attachment_added: 'attachment_added',
 };
 
-const COSMETICS_BY_LEVEL: Record<number, string[]> = {
-  4: ['ti_novato'],
-  5: ['fr_waves'],
-  7: ['ti_aprendiz'],
-  15: ['fr_crystal', 'ti_constructor'],
-  20: ['bg_aurora'],
-  25: ['bg_cyberpunk'],
-  30: ['av_eagle', 'fr_crown'],
-  40: ['ti_arquitecto'],
-  50: ['av_dragon', 'fr_aurora'],
-  75: ['ti_maestro'],
-  100: ['ti_leyenda', 'fr_legend'],
-};
+// ★ Clave compartida entre pestañas para evitar doble conteo
+const LAST_SEEN_KEY = 'architablox-last-seen-activity';
 
 export function useXP() {
   const addXP = useProfile((s) => s.addXP);
@@ -43,13 +32,35 @@ export function useXP() {
     recomputeStreak();
   }, [recomputeStreak]);
 
+  // Inicializa desde localStorage
+  useEffect(() => {
+    try {
+      lastSeenId.current = localStorage.getItem(LAST_SEEN_KEY);
+    } catch {}
+  }, []);
+
+  // ★ Sincroniza entre pestañas
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LAST_SEEN_KEY && e.newValue) {
+        lastSeenId.current = e.newValue;
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   useEffect(() => {
     const unsub = useBoard.subscribe((state) => {
       const board = state.boards.find((b) => b.id === state.activeBoardId);
       const latest = board?.activity?.[0];
       if (!latest) return;
       if (latest.id === lastSeenId.current) return;
+
       lastSeenId.current = latest.id;
+      try {
+        localStorage.setItem(LAST_SEEN_KEY, latest.id);
+      } catch {}
 
       const action = ACTION_MAP[latest.type];
       if (!action) return;

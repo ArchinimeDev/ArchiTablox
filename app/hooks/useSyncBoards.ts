@@ -30,10 +30,28 @@ function rowsToBoards(data: any[]): Board[] {
   }));
 }
 
-function boardToRow(board: Board, userId: string) {
+// ★ INSERT (incluye user_id, solo se usa para crear)
+function boardToInsertRow(board: Board, userId: string) {
   return {
     id: board.id,
     user_id: userId,
+    name: board.name,
+    data: {
+      columns: board.columns,
+      cards: board.cards,
+      labels: board.labels,
+      notificationSettings:
+        board.notificationSettings ?? DEFAULT_NOTIFICATION_SETTINGS,
+      templates: board.templates ?? [],
+      activity: board.activity ?? [],
+    },
+  };
+}
+
+// ★ UPDATE (NO incluye user_id: la fila conserva su dueño original)
+function boardToUpdateRow(board: Board) {
+  return {
+    id: board.id,
     name: board.name,
     data: {
       columns: board.columns,
@@ -59,6 +77,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
   const hasLoadedRef = useRef(false);
   const isApplyingRemoteRef = useRef(false);
   const editableBoardIdsRef = useRef<Set<string>>(new Set());
+  const lastLocalWriteRef = useRef<number>(0);
 
   // ============ 1. Escuchar auth ============
   useEffect(() => {
@@ -123,7 +142,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
 
       if (data.length === 0) {
         if (boards.length > 0) {
-          const rows = boards.map((b) => boardToRow(b, userId));
+          const rows = boards.map((b) => boardToInsertRow(b, userId));
           const { error: insErr } = await supabase
             .from('boards')
             .insert(rows);
@@ -174,18 +193,43 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         return;
       }
 
-      const rows = editable.map((b) => boardToRow(b, userId));
-
-      const { error } = await supabase
+      // ★ Separar inserts de updates para no tocar user_id en updates
+      const { data: existing } = await supabase
         .from('boards')
-        .upsert(rows, { onConflict: 'id' });
+        .select('id')
+        .in('id', editable.map((b) => b.id));
 
-      if (error) {
-        console.error('Error guardando tableros:', error);
-        setStatus('error');
-        return;
+      const existingIds = new Set((existing ?? []).map((r: any) => r.id));
+
+      const toInsert = editable
+        .filter((b) => !existingIds.has(b.id))
+        .map((b) => boardToInsertRow(b, userId));
+
+      const toUpdate = editable
+        .filter((b) => existingIds.has(b.id))
+        .map((b) => boardToUpdateRow(b));
+
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from('boards').insert(toInsert);
+        if (error) {
+          console.error('Error insertando tableros:', error);
+          setStatus('error');
+          return;
+        }
       }
 
+      if (toUpdate.length > 0) {
+        const { error } = await supabase
+          .from('boards')
+          .upsert(toUpdate, { onConflict: 'id' });
+        if (error) {
+          console.error('Error actualizando tableros:', error);
+          setStatus('error');
+          return;
+        }
+      }
+
+      lastLocalWriteRef.current = Date.now();
       setLastSyncAt(Date.now());
       setStatus('synced');
     }, 1500);
@@ -202,6 +246,10 @@ export function useSyncBoards(): UseSyncBoardsReturn {
 
     const reloadFromCloud = async () => {
       if (!hasLoadedRef.current) return;
+
+      // ★ Ignorar ecos de nuestra propia escritura reciente
+      if (Date.now() - lastLocalWriteRef.current < 2000) return;
+
       const { data, error } = await supabase
         .from('boards')
         .select('*')
@@ -230,9 +278,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       const cloudBoards = rowsToBoards(data);
       if (cloudBoards.length > 0) {
         const currentActiveId = useBoard.getState().activeBoardId;
-        const activeExists = cloudBoards.some(
-          (b) => b.id === currentActiveId
-        );
+        const activeExists = cloudBoards.some((b) => b.id === currentActiveId);
         setBoards(
           cloudBoards,
           activeExists ? currentActiveId : cloudBoards[0].id
@@ -247,6 +293,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       }, 500);
     };
 
+    // ★ Filtro por user_id para no escuchar toda la tabla
     const channel = supabase
       .channel(`boards-${userId}`)
       .on(
@@ -255,6 +302,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           event: '*',
           schema: 'public',
           table: 'boards',
+          filter: `user_id=eq.${userId}`,
         },
         () => {
           if (isApplyingRemoteRef.current) return;

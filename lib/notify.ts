@@ -1,8 +1,19 @@
-type EmailType = 'assigned' | 'comment' | 'due_soon' | 'overdue' | 'test';
+// lib/notify.ts
+export type EmailType =
+  | 'assigned'
+  | 'comment'
+  | 'due_soon'
+  | 'overdue'
+  | 'test';
 
-interface NotifyOptions {
+export interface SendEmailPayload {
   to: string;
   type: EmailType;
+  /**
+   * Obligatorio para todos los tipos excepto 'test'.
+   * El endpoint valida que tanto emisor como destinatario sean miembros.
+   */
+  boardId?: string;
   data: {
     cardTitle?: string;
     boardName?: string;
@@ -12,20 +23,28 @@ interface NotifyOptions {
   };
 }
 
-export async function sendEmail(options: NotifyOptions): Promise<boolean> {
-  try {
-    const res = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(options),
-    });
-    if (!res.ok) {
-      console.warn('[notify] Error:', await res.text());
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn('[notify] Error de red:', err);
-    return false;
+export interface SendEmailResult {
+  ok: true;
+  id?: string;
+}
+
+/**
+ * Llama al endpoint /api/send-email.
+ * Lanza si el servidor responde con error HTTP.
+ */
+export async function sendEmail(
+  payload: SendEmailPayload
+): Promise<SendEmailResult> {
+  const res = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error ?? `Error ${res.status}`);
   }
+
+  return (await res.json()) as SendEmailResult;
 }

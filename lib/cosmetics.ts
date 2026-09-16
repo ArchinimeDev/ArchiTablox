@@ -66,6 +66,30 @@ export const COSMETICS: Cosmetic[] = [
 ];
 
 // ============================================================
+// COSMÉTICOS DESBLOQUEADOS POR NIVEL
+// Fuente única de verdad. La consumen `store/profile.addXP` y
+// `hooks/useXP` para:
+//   1) otorgar el cosmético al subir de nivel
+//   2) mostrar el toast "🎉 Nivel X · Nuevo: ..."
+// Si añades un cosmético con `unlockedByLevel` en COSMETICS,
+// añádelo también aquí para que se otorgue automáticamente.
+// ============================================================
+
+export const COSMETICS_BY_LEVEL: Record<number, string[]> = {
+  4: ['ti_novato'],
+  5: ['fr_waves'],
+  7: ['ti_aprendiz'],
+  15: ['fr_crystal', 'ti_constructor'],
+  20: ['bg_aurora'],
+  25: ['bg_cyberpunk'],
+  30: ['av_eagle', 'fr_crown'],
+  40: ['ti_arquitecto'],
+  50: ['av_dragon', 'fr_aurora'],
+  75: ['ti_maestro'],
+  100: ['ti_leyenda', 'fr_legend'],
+};
+
+// ============================================================
 // HELPERS
 // ============================================================
 

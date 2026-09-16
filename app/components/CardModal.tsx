@@ -72,9 +72,7 @@ interface Props {
   onDeleteLabel: (labelId: string) => void;
   onAddComment: (text: string) => void;
   onDeleteComment: (commentId: string) => void;
-  onAddAttachment: (
-    attachment: Omit<Attachment, 'id' | 'createdAt'>
-  ) => void;
+  onAddAttachment: (attachment: Omit<Attachment, 'id' | 'createdAt'>) => void;
   onDeleteAttachment: (attachmentId: string) => void;
   onToggleAssignee: (userId: string) => void;
 }
@@ -195,6 +193,8 @@ export function CardModal({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  // ★ NUEVO: distinguir "cargando" de "vacío"
+  const [membersLoaded, setMembersLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showCoverPicker, setShowCoverPicker] = useState(false);
@@ -216,14 +216,21 @@ export function CardModal({
   const attachments = card.attachments ?? [];
   const assigneeIds = card.assigneeIds ?? [];
 
+  // ★ FIX: setear membersLoaded en todos los paths
   useEffect(() => {
-    if (!boardId) return;
+    if (!boardId) {
+      setMembersLoaded(true);
+      return;
+    }
 
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         boardId
       );
-    if (!isUuid) return;
+    if (!isUuid) {
+      setMembersLoaded(true);
+      return;
+    }
 
     const supabase = createClient();
     supabase
@@ -231,13 +238,13 @@ export function CardModal({
       .then(({ data, error }) => {
         if (error) {
           console.warn('[CardModal]', error.message);
-          return;
+        } else if (data) {
+          setMembers(data as Member[]);
         }
-        if (data) setMembers(data as Member[]);
+        setMembersLoaded(true);
       });
   }, [boardId]);
 
-  // ✅ FIX: ref para evitar stale closure en Ctrl+Enter
   const handleSave = () => {
     if (!title.trim()) return;
     onSave({
@@ -257,7 +264,8 @@ export function CardModal({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSaveRef.current();
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
+        handleSaveRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -395,10 +403,7 @@ export function CardModal({
         e.preventDefault();
         setMentionMenu((m) => ({
           ...m,
-          selectedIdx: Math.min(
-            m.selectedIdx + 1,
-            filteredMembers.length - 1
-          ),
+          selectedIdx: Math.min(m.selectedIdx + 1, filteredMembers.length - 1),
         }));
         return;
       }
@@ -730,7 +735,10 @@ export function CardModal({
                         ? hexWithAlpha(label.color, 0.15)
                         : 'transparent',
                       color: label.color,
-                      borderColor: hexWithAlpha(label.color, active ? 0.5 : 0.2),
+                      borderColor: hexWithAlpha(
+                        label.color,
+                        active ? 0.5 : 0.2
+                      ),
                       opacity: active ? 1 : 0.55,
                     }}
                   >
@@ -772,9 +780,14 @@ export function CardModal({
               </label>
             </div>
 
-            {members.length === 0 ? (
+            {/* ★ FIX: distinguir cargando de vacío */}
+            {!membersLoaded ? (
               <p className="text-xs text-slate-600 italic">
                 Cargando miembros...
+              </p>
+            ) : members.length === 0 ? (
+              <p className="text-xs text-slate-600 italic">
+                Este tablero no tiene miembros. Compártelo para asignar tareas.
               </p>
             ) : (
               <div className="space-y-1.5">
@@ -802,7 +815,9 @@ export function CardModal({
                           />
                         ) : (
                           <div
-                            className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[11px] font-bold text-white`}
+                            className={`w-full h-full ${getAvatarColor(
+                              m.email
+                            )} flex items-center justify-center text-[11px] font-bold text-white`}
                           >
                             {displayName.charAt(0).toUpperCase()}
                           </div>
@@ -974,9 +989,7 @@ export function CardModal({
                         onClick={(e) => {
                           e.stopPropagation();
                           if (
-                            window.confirm(
-                              `¿Eliminar adjunto "${att.name}"?`
-                            )
+                            window.confirm(`¿Eliminar adjunto "${att.name}"?`)
                           )
                             onDeleteAttachment(att.id);
                         }}

@@ -1,14 +1,14 @@
-// app/api/send-email/route.ts
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createClient } from '@/utils/supabase/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const ALLOWED_TYPES = ['assigned', 'comment', 'due_soon', 'overdue', 'test'] as const;
 type EmailType = (typeof ALLOWED_TYPES)[number];
 
-// Rate limit en memoria (por instancia serverless). Suficiente para frenar abuso casual.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (s: unknown): s is string =>
+  typeof s === 'string' && UUID_REGEX.test(s);
+
 const RATE_LIMIT = new Map<string, { count: number; resetAt: number }>();
 const MAX_PER_HOUR = 30;
 
@@ -26,7 +26,20 @@ function checkRateLimit(userId: string): boolean {
 
 function sanitize(s: unknown, max = 200): string {
   if (typeof s !== 'string') return '';
-  return s.slice(0, max).replace(/[<>]/g, '');
+  return s
+    .slice(0, max)
+    .replace(/[<>]/g, '')
+    .replace(/[\r\n]+/g, ' ')
+    .trim();
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 interface EmailPayload {
@@ -45,6 +58,14 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
   const { type, data } = payload;
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL || 'https://archi-tablox.vercel.app';
+
+  const safe = {
+    cardTitle: escapeHtml(data.cardTitle ?? ''),
+    boardName: escapeHtml(data.boardName ?? ''),
+    fromUser: escapeHtml(data.fromUser ?? ''),
+    commentText: escapeHtml(data.commentText ?? ''),
+    dueDate: escapeHtml(data.dueDate ?? ''),
+  };
 
   const wrap = (icon: string, title: string, body: string) => `
     <!DOCTYPE html>
@@ -81,43 +102,43 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
   switch (type) {
     case 'assigned':
       return {
-        subject: `📌 Te asignaron: ${data.cardTitle ?? ''}`,
+        subject: `📌 Te asignaron: ${safe.cardTitle}`,
         html: wrap(
           '📌',
           'Te asignaron una tarjeta',
-          `<b>${data.fromUser ?? 'Alguien'}</b> te asignó a <b>${data.cardTitle ?? ''}</b>${
-            data.boardName ? ` en el tablero <b>${data.boardName}</b>` : ''
+          `<b>${safe.fromUser}</b> te asignó a <b>${safe.cardTitle}</b>${
+            safe.boardName ? ` en el tablero <b>${safe.boardName}</b>` : ''
           }.`
         ),
       };
     case 'comment':
       return {
-        subject: `💬 Nuevo comentario en: ${data.cardTitle ?? ''}`,
+        subject: `💬 Nuevo comentario en: ${safe.cardTitle}`,
         html: wrap(
           '💬',
           'Nuevo comentario',
-          `<b>${data.fromUser ?? 'Alguien'}</b> comentó en <b>${data.cardTitle ?? ''}</b>:
+          `<b>${safe.fromUser}</b> comentó en <b>${safe.cardTitle}</b>:
            <div style="margin:16px 0;padding:12px 16px;background:#f1f5f9;border-left:3px solid #f59e0b;border-radius:6px;text-align:left;color:#334155;font-style:italic;">
-             "${data.commentText ?? ''}"
+             "${safe.commentText}"
            </div>`
         ),
       };
     case 'due_soon':
       return {
-        subject: `⏰ Vence pronto: ${data.cardTitle ?? ''}`,
+        subject: `⏰ Vence pronto: ${safe.cardTitle}`,
         html: wrap(
           '⏰',
           'Una tarjeta vence pronto',
-          `<b>${data.cardTitle ?? ''}</b> vence el <b>${data.dueDate ?? ''}</b>.`
+          `<b>${safe.cardTitle}</b> vence el <b>${safe.dueDate}</b>.`
         ),
       };
     case 'overdue':
       return {
-        subject: `⚠️ Vencida: ${data.cardTitle ?? ''}`,
+        subject: `⚠️ Vencida: ${safe.cardTitle}`,
         html: wrap(
           '⚠️',
           'Una tarjeta está vencida',
-          `<b>${data.cardTitle ?? ''}</b> venció el <b>${data.dueDate ?? ''}</b>. ¡Revísala!`
+          `<b>${safe.cardTitle}</b> venció el <b>${safe.dueDate}</b>. ¡Revísala!`
         ),
       };
     case 'test':
@@ -134,7 +155,6 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
 
 export async function POST(request: Request) {
   try {
-    // 1. Auth obligatoria
     const supabase = await createClient();
     const {
       data: { user },
@@ -144,7 +164,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    // 2. Rate limit
     if (!checkRateLimit(user.id)) {
       return NextResponse.json(
         { error: 'Demasiados envíos. Intenta más tarde.' },
@@ -152,7 +171,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Config
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
         { error: 'Servicio no configurado' },
@@ -160,9 +178,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Validar payload
     const body = await request.json();
-    const { to, type, data } = body ?? {};
+    const { to, type, data, boardId } = body ?? {};
 
     if (typeof to !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json(
@@ -177,7 +194,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'data inválido' }, { status: 400 });
     }
 
-    // 5. Anti-abuse: no auto-notificarse (excepto test)
     if (type !== 'test' && to.toLowerCase() === user.email?.toLowerCase()) {
       return NextResponse.json(
         { error: 'No puedes notificarte a ti mismo' },
@@ -185,17 +201,62 @@ export async function POST(request: Request) {
       );
     }
 
-    // 6. Sanitizar
+    // ★ Validar membership (excepto 'test')
+    if (type !== 'test') {
+      if (!isUuid(boardId)) {
+        return NextResponse.json(
+          { error: 'boardId inválido' },
+          { status: 400 }
+        );
+      }
+
+      const { data: me } = await supabase
+        .from('board_members')
+        .select('role')
+        .eq('board_id', boardId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!me) {
+        return NextResponse.json(
+          { error: 'No perteneces a este tablero' },
+          { status: 403 }
+        );
+      }
+
+      const { data: isMember, error: rpcErr } = await supabase.rpc(
+        'is_board_member_by_email',
+        { p_board_id: boardId, p_email: to.toLowerCase() }
+      );
+
+      if (rpcErr) {
+        console.error('[EMAIL] member check error:', rpcErr.message);
+        return NextResponse.json(
+          { error: 'Error de validación' },
+          { status: 500 }
+        );
+      }
+
+      if (!isMember) {
+        return NextResponse.json(
+          { error: 'El destinatario no es miembro del tablero' },
+          { status: 403 }
+        );
+      }
+    }
+
     const safeData = {
       cardTitle: sanitize(data?.cardTitle, 200),
       boardName: sanitize(data?.boardName, 100),
-      fromUser: sanitize(data?.fromUser, 100),
+      // ★ fromUser se fuerza al usuario autenticado, no lo que diga el cliente
+      fromUser: sanitize(user.email ?? 'Alguien', 100),
       commentText: sanitize(data?.commentText, 500),
       dueDate: sanitize(data?.dueDate, 40),
     };
 
     const { subject, html } = buildEmail({ to, type, data: safeData });
 
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const result = await resend.emails.send({
       from: 'ArchiTablox <onboarding@resend.dev>',
       to,

@@ -3,10 +3,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ProfileStats } from '@/types';
 import { levelFromXP } from '@/lib/xp';
-import { getCosmetic, COSMETICS } from '@/lib/cosmetics';
+import { getCosmetic, COSMETICS, COSMETICS_BY_LEVEL } from '@/lib/cosmetics';
 import { useAdmin } from './admin';
 
-// IDs de los temas gratis que SIEMPRE están desbloqueados
 const FREE_THEME_IDS = [
   'th_light',
   'th_dark',
@@ -36,20 +35,6 @@ const INITIAL: ProfileStats = {
     title: 'ti_none',
     theme: 'th_light',
   },
-};
-
-const COSMETICS_BY_LEVEL: Record<number, string[]> = {
-  4: ['ti_novato'],
-  5: ['fr_waves'],
-  7: ['ti_aprendiz'],
-  15: ['fr_crystal', 'ti_constructor'],
-  20: ['bg_aurora'],
-  25: ['bg_cyberpunk'],
-  30: ['av_eagle', 'fr_crown'],
-  40: ['ti_arquitecto'],
-  50: ['av_dragon', 'fr_aurora'],
-  75: ['ti_maestro'],
-  100: ['ti_leyenda', 'fr_legend'],
 };
 
 interface ProfileStore {
@@ -107,7 +92,6 @@ export const useProfile = create<ProfileStore>()(
         const cosmetic = getCosmetic(cosmeticId);
         if (!cosmetic) return false;
 
-        // Admin: desbloqueado virtualmente, no se persiste en `owned`
         if (useAdmin.getState().isAdmin) return true;
 
         const { profile } = get();
@@ -176,10 +160,8 @@ export const useProfile = create<ProfileStore>()(
       migrate: (persisted: any, version) => {
         const next = persisted ?? {};
 
-        // v2 → v3: isAdmin ya no se persiste en este store
         if (next.isAdmin !== undefined) delete next.isAdmin;
 
-        // v1 → v2: añadir temas gratis y equipar th_light
         if (version < 2) {
           const p = next.profile ?? {};
           if (!p.owned) p.owned = {};

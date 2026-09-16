@@ -39,7 +39,6 @@ const PRIORITY_DOT: Record<string, string> = {
   urgent: 'bg-red-500',
 };
 
-// Resalta el término buscado en el título
 function Highlight({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
 
@@ -83,31 +82,25 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Reset al abrir
   useEffect(() => {
     if (open) {
       setQuery('');
       setSelectedIdx(0);
-      // Pequeño delay para que el input esté montado
       setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [open]);
 
-  // Buscar en tarjetas, tableros y etiquetas
   const results: SearchResult[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     const out: SearchResult[] = [];
 
-    // === TARJETAS ===
     const cardResults: SearchResult[] = [];
     for (const board of boards) {
       for (const card of Object.values(board.cards)) {
         if (card.archived) continue;
 
         const titleMatch = card.title.toLowerCase().includes(q);
-        const descMatch = (card.description ?? '')
-          .toLowerCase()
-          .includes(q);
+        const descMatch = (card.description ?? '').toLowerCase().includes(q);
 
         if (!q || titleMatch || descMatch) {
           cardResults.push({
@@ -122,7 +115,6 @@ export function CommandPalette({
         }
       }
     }
-    // Ordenar: coincidencias en título primero
     cardResults.sort((a, b) => {
       const aTitle = a.title.toLowerCase().includes(q);
       const bTitle = b.title.toLowerCase().includes(q);
@@ -131,7 +123,6 @@ export function CommandPalette({
       return 0;
     });
 
-    // === TABLEROS ===
     const boardResults: SearchResult[] = [];
     for (const board of boards) {
       if (!q || board.name.toLowerCase().includes(q)) {
@@ -139,14 +130,12 @@ export function CommandPalette({
           id: `board-${board.id}`,
           type: 'board',
           title: board.name,
-          subtitle:
-            board.id === activeBoardId ? 'Tablero actual' : 'Tablero',
+          subtitle: board.id === activeBoardId ? 'Tablero actual' : 'Tablero',
           boardId: board.id,
         });
       }
     }
 
-    // === ETIQUETAS ===
     const labelResults: SearchResult[] = [];
     const seenLabels = new Set<string>();
     for (const board of boards) {
@@ -169,12 +158,10 @@ export function CommandPalette({
       }
     }
 
-    // Sin query: mostrar primero tableros, luego tarjetas (más recientes)
     if (!q) {
       out.push(...boardResults);
       out.push(...cardResults.slice(0, 20));
     } else {
-      // Con query: intercalar por relevancia
       out.push(...cardResults.slice(0, 30));
       out.push(...boardResults.slice(0, 10));
       out.push(...labelResults.slice(0, 10));
@@ -183,12 +170,10 @@ export function CommandPalette({
     return out;
   }, [query, boards, activeBoardId]);
 
-  // Reset índice si cambian los resultados
   useEffect(() => {
     setSelectedIdx(0);
   }, [results.length, query]);
 
-  // Scroll al elemento seleccionado
   useEffect(() => {
     if (!listRef.current) return;
     const el = listRef.current.querySelector(
@@ -199,7 +184,6 @@ export function CommandPalette({
     }
   }, [selectedIdx]);
 
-  // Manejo de teclado dentro del modal
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -217,21 +201,16 @@ export function CommandPalette({
     }
   };
 
+  // ★ SIMPLIFICADO: el page.tsx gestiona la apertura pendiente.
+  // Aquí solo avisamos; no usamos setTimeout.
   const handleSelect = (r: SearchResult) => {
     if (r.type === 'card' && r.cardId && r.boardId) {
-      if (r.boardId !== activeBoardId) {
-        onSwitchBoard(r.boardId);
-        // Pequeño delay para que cambie el tablero antes de abrir la tarjeta
-        setTimeout(() => onOpenCard(r.cardId!, r.boardId!), 200);
-      } else {
-        onOpenCard(r.cardId, r.boardId);
-      }
+      onOpenCard(r.cardId, r.boardId);
       onClose();
     } else if (r.type === 'board' && r.boardId) {
       onSwitchBoard(r.boardId);
       onClose();
     } else if (r.type === 'label' && r.boardId) {
-      // Solo cambia al tablero por ahora
       onSwitchBoard(r.boardId);
       onClose();
     }
@@ -239,8 +218,8 @@ export function CommandPalette({
 
   if (!open) return null;
 
-  // Agrupar resultados por tipo para mostrar encabezados
-  const grouped: { type: ResultType; label: string; items: SearchResult[] }[] = [];
+  const grouped: { type: ResultType; label: string; items: SearchResult[] }[] =
+    [];
   const cards = results.filter((r) => r.type === 'card');
   const boardsR = results.filter((r) => r.type === 'board');
   const labelsR = results.filter((r) => r.type === 'label');
@@ -260,7 +239,6 @@ export function CommandPalette({
         className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Input */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800">
           <svg
             width="16"
@@ -289,7 +267,6 @@ export function CommandPalette({
           </kbd>
         </div>
 
-        {/* Resultados */}
         <div ref={listRef} className="overflow-y-auto flex-1 p-1.5">
           {results.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
@@ -319,7 +296,6 @@ export function CommandPalette({
                         isSelected ? 'bg-slate-800' : 'hover:bg-slate-800/50'
                       }`}
                     >
-                      {/* Icono según tipo */}
                       {r.type === 'card' && (
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -347,13 +323,13 @@ export function CommandPalette({
                         <span
                           className="w-3 h-3 rounded-full shrink-0 border"
                           style={{
-                            backgroundColor: (r.labelColor ?? '#64748b') + '40',
+                            backgroundColor:
+                              (r.labelColor ?? '#64748b') + '40',
                             borderColor: r.labelColor ?? '#64748b',
                           }}
                         />
                       )}
 
-                      {/* Texto */}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-slate-100 truncate">
                           <Highlight text={r.title} query={query} />
@@ -366,7 +342,6 @@ export function CommandPalette({
                         )}
                       </div>
 
-                      {/* Flecha si está seleccionado */}
                       {isSelected && (
                         <svg
                           width="12"
@@ -390,7 +365,6 @@ export function CommandPalette({
           )}
         </div>
 
-        {/* Footer con atajos */}
         <div className="border-t border-slate-800 px-3 py-2 flex items-center gap-3 text-[10px] text-slate-500 shrink-0">
           <span className="flex items-center gap-1">
             <kbd className="font-mono bg-slate-950 border border-slate-800 rounded px-1 py-0.5">
