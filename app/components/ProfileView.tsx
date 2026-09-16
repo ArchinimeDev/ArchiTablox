@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useProfile } from '@/store/profile';
+import { useAdmin } from '@/store/admin';
 import { useStats } from '@/store/stats';
 import {
   COSMETICS,
@@ -72,7 +73,7 @@ export function ProfileView({
   const profile = useProfile((s) => s.profile);
   const equip = useProfile((s) => s.equip);
   const buy = useProfile((s) => s.buy);
-  const isAdmin = useProfile((s) => s.isAdmin);
+  const isAdmin = useAdmin((s) => s.isAdmin);
   const stats = useStats((s) => s.stats);
   const { toast } = useToast();
 
@@ -89,7 +90,7 @@ export function ProfileView({
     : profile.equipped;
 
   const previewOwned = previewCosmetic
-    ? !!profile.owned[previewCosmetic.id]
+    ? !!profile.owned[previewCosmetic.id] || isAdmin
     : false;
 
   const equipWithTheme = (cosmeticId: string) => {
@@ -212,6 +213,7 @@ export function ProfileView({
       {tab === 'collection' && (
         <CollectionGrid
           profile={profile}
+          isAdmin={isAdmin}
           previewId={previewCosmetic?.id}
           onPreview={setPreviewCosmetic}
         />
@@ -592,11 +594,12 @@ function ShopGrid({
   const items = useMemo(() => {
     return COSMETICS.filter((c) => {
       if (!c.price) return false;
-      if (profile.owned[c.id]) return false;
+      // Admin siempre los ve (para poder equiparlos), aunque los tenga ya
+      if (!isAdmin && profile.owned[c.id]) return false;
       if (cat !== 'all' && c.category !== cat) return false;
       return true;
     });
-  }, [cat, profile.owned]);
+  }, [cat, profile.owned, isAdmin]);
 
   return (
     <>
@@ -682,10 +685,12 @@ function ShopGrid({
 
 function CollectionGrid({
   profile,
+  isAdmin,
   previewId,
   onPreview,
 }: {
   profile: any;
+  isAdmin: boolean;
   previewId: string | undefined;
   onPreview: (c: Cosmetic) => void;
 }) {
@@ -695,12 +700,12 @@ function CollectionGrid({
   const items = useMemo(() => {
     return COSMETICS.filter((c) => {
       if (cat !== 'all' && c.category !== cat) return false;
-      const owned = !!profile.owned[c.id];
+      const owned = !!profile.owned[c.id] || isAdmin;
       if (filter === 'owned' && !owned) return false;
       if (filter === 'locked' && owned) return false;
       return true;
     });
-  }, [cat, filter, profile.owned]);
+  }, [cat, filter, profile.owned, isAdmin]);
 
   const equippedIds = Object.values(profile.equipped).filter(Boolean) as string[];
 
@@ -741,7 +746,7 @@ function CollectionGrid({
 
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {items.map((c) => {
-          const owned = !!profile.owned[c.id];
+          const owned = !!profile.owned[c.id] || isAdmin;
           const equipped = equippedIds.includes(c.id);
           const isPreviewing = previewId === c.id;
           const rar = RARITY_COLORS[c.rarity];
