@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect } from 'react';
 import { useProfile } from '@/store/profile';
 import { useAdmin } from '@/store/admin';
 import { useStats } from '@/store/stats';
+import { useSound } from '@/store/sound';
+import { sounds } from '@/lib/sounds';
 import {
   COSMETICS,
   RARITY_COLORS,
@@ -41,9 +43,10 @@ const CATEGORY_LABELS: Record<CosmeticCategory, string> = {
 };
 
 function dayKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate()
-  ).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    '0'
+  )}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function getLast90Days(): Date[] {
@@ -75,7 +78,21 @@ export function ProfileView({
   const buy = useProfile((s) => s.buy);
   const isAdmin = useAdmin((s) => s.isAdmin);
   const stats = useStats((s) => s.stats);
+  const soundEnabled = useSound((s) => s.enabled);
+  const toggleSound = useSound((s) => s.toggle);
   const { toast } = useToast();
+
+  // ✨ NUEVO: preview de tema en tiempo real
+  useEffect(() => {
+    if (previewCosmetic?.category === 'theme') {
+      applyTheme(previewCosmetic.value as ThemeId);
+      return;
+    }
+    const equippedTheme = getCosmetic(profile.equipped.theme ?? '');
+    if (equippedTheme?.category === 'theme') {
+      applyTheme(equippedTheme.value as ThemeId);
+    }
+  }, [previewCosmetic, profile.equipped.theme]);
 
   useEffect(() => {
     if (initialTab) setTab(initialTab);
@@ -101,14 +118,27 @@ export function ProfileView({
     }
   };
 
+  // ✨ NUEVO: handler de preview con sonido
+  const handlePreview = (c: Cosmetic) => {
+    sounds.preview();
+    setPreviewCosmetic(c);
+  };
+
+  const handleCancelPreview = () => {
+    sounds.cancel();
+    setPreviewCosmetic(null);
+  };
+
   const handleBuyPreview = () => {
     if (!previewCosmetic) return;
     const cosmetic = previewCosmetic;
     const ok = buy(cosmetic.id);
     if (!ok) {
+      sounds.error();
       toast('No tienes suficientes AP', 'error');
       return;
     }
+    sounds.purchase();
     equipWithTheme(cosmetic.id);
     toast(`✨ Desbloqueaste: ${cosmetic.name}`, 'success', 3000);
     setPreviewCosmetic(null);
@@ -117,6 +147,7 @@ export function ProfileView({
   const handleEquipPreview = () => {
     if (!previewCosmetic) return;
     const cosmetic = previewCosmetic;
+    sounds.equip();
     equipWithTheme(cosmetic.id);
     toast(`✓ Equipado: ${cosmetic.name}`, 'success', 2000);
     setPreviewCosmetic(null);
@@ -165,29 +196,63 @@ export function ProfileView({
           ap={profile.ap}
           onBuy={handleBuyPreview}
           onEquip={handleEquipPreview}
-          onCancel={() => setPreviewCosmetic(null)}
+          onCancel={handleCancelPreview}
         />
       )}
 
       <div className="sticky top-0 z-10 -mx-3 px-3 py-2 bg-slate-950/95 backdrop-blur border-b border-slate-800 lg:-mx-6 lg:px-6">
-        <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit">
-          {(['profile', 'shop', 'collection'] as ProfileTab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`
-                interactive px-3.5 h-8 rounded-md text-xs font-medium transition-all
-                ${tab === t
-                  ? 'bg-slate-800 text-slate-100'
-                  : 'text-slate-400 hover:text-slate-200'
-                }
-              `}
-            >
-              {t === 'profile' && 'Perfil'}
-              {t === 'shop' && 'Tienda'}
-              {t === 'collection' && 'Colección'}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 w-fit">
+            {(['profile', 'shop', 'collection'] as ProfileTab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  sounds.click();
+                  setTab(t);
+                }}
+                className={`
+                  interactive px-3.5 h-8 rounded-md text-xs font-medium transition-all
+                  ${tab === t
+                    ? 'bg-slate-800 text-slate-100'
+                    : 'text-slate-400 hover:text-slate-200'
+                  }
+                `}
+              >
+                {t === 'profile' && 'Perfil'}
+                {t === 'shop' && 'Tienda'}
+                {t === 'collection' && 'Colección'}
+              </button>
+            ))}
+          </div>
+
+          {/* ✨ NUEVO: botón de mute */}
+          <button
+            onClick={() => {
+              toggleSound();
+              if (!soundEnabled) {
+                setTimeout(() => sounds.click(), 50);
+              }
+            }}
+            className={`interactive shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${
+              soundEnabled
+                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:border-amber-500/50'
+                : 'bg-slate-950 border-slate-800 text-slate-600 hover:text-slate-400'
+            }`}
+            title={soundEnabled ? 'Desactivar sonidos' : 'Activar sonidos'}
+          >
+            {soundEnabled ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="22" y1="9" x2="16" y2="15" />
+                <line x1="16" y1="9" x2="22" y2="15" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
@@ -206,7 +271,7 @@ export function ProfileView({
           profile={profile}
           isAdmin={isAdmin}
           previewId={previewCosmetic?.id}
-          onPreview={setPreviewCosmetic}
+          onPreview={handlePreview}
         />
       )}
 
@@ -215,12 +280,16 @@ export function ProfileView({
           profile={profile}
           isAdmin={isAdmin}
           previewId={previewCosmetic?.id}
-          onPreview={setPreviewCosmetic}
+          onPreview={handlePreview}
         />
       )}
     </div>
   );
 }
+
+// ============================================================
+// HEADER
+// ============================================================
 
 function ProfileHeader({
   profile,
@@ -354,6 +423,10 @@ function ProfileHeader({
   );
 }
 
+// ============================================================
+// PREVIEW BAR
+// ============================================================
+
 function PreviewBar({
   cosmetic,
   owned,
@@ -428,6 +501,10 @@ function PreviewBar({
     </div>
   );
 }
+
+// ============================================================
+// TAB CONTENT (perfil)
+// ============================================================
 
 function ProfileTabContent({
   stats,
@@ -506,7 +583,10 @@ function ProfileTabContent({
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <button onClick={onOpenShare} className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left border-b border-slate-800">
+        <button
+          onClick={() => { sounds.click(); onOpenShare(); }}
+          className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left border-b border-slate-800"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
             <polyline points="16 6 12 2 8 6" />
@@ -517,7 +597,10 @@ function ProfileTabContent({
             <path d="m9 18 6-6-6-6" />
           </svg>
         </button>
-        <button onClick={onOpenDrawer} className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left border-b border-slate-800">
+        <button
+          onClick={() => { sounds.click(); onOpenDrawer(); }}
+          className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left border-b border-slate-800"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
             <rect x="3" y="3" width="7" height="18" rx="1" />
             <rect x="14" y="3" width="7" height="18" rx="1" />
@@ -527,7 +610,10 @@ function ProfileTabContent({
             <path d="m9 18 6-6-6-6" />
           </svg>
         </button>
-        <button onClick={onOpenShortcuts} className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left">
+        <button
+          onClick={() => { sounds.click(); onOpenShortcuts(); }}
+          className="interactive w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-800 transition-colors text-left"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
@@ -541,6 +627,7 @@ function ProfileTabContent({
 
       <button
         onClick={() => {
+          sounds.click();
           if (window.confirm('¿Cerrar sesión?')) onLogout();
         }}
         className="interactive w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 hover:border-red-500/40 text-red-400 font-medium text-sm"
@@ -569,6 +656,10 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
+// ============================================================
+// SHOP + COLLECTION
+// ============================================================
+
 const ALL_CATEGORIES: (CosmeticCategory | 'all')[] = [
   'all',
   'avatar',
@@ -594,7 +685,6 @@ function ShopGrid({
   const items = useMemo(() => {
     return COSMETICS.filter((c) => {
       if (!c.price) return false;
-      // Admin siempre los ve (para poder equiparlos), aunque los tenga ya
       if (!isAdmin && profile.owned[c.id]) return false;
       if (cat !== 'all' && c.category !== cat) return false;
       return true;
@@ -607,7 +697,10 @@ function ShopGrid({
         {ALL_CATEGORIES.map((c) => (
           <button
             key={c}
-            onClick={() => setCat(c)}
+            onClick={() => {
+              sounds.click();
+              setCat(c);
+            }}
             className={`interactive shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
               cat === c
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
@@ -639,6 +732,7 @@ function ShopGrid({
               <button
                 key={c.id}
                 onClick={() => onPreview(c)}
+                onMouseEnter={() => sounds.hover()}
                 className={`
                   interactive text-left p-3 rounded-xl border transition-all
                   ${rar.border} ${rar.bg}
@@ -716,7 +810,10 @@ function CollectionGrid({
           {ALL_CATEGORIES.map((c) => (
             <button
               key={c}
-              onClick={() => setCat(c)}
+              onClick={() => {
+                sounds.click();
+                setCat(c);
+              }}
               className={`interactive shrink-0 px-3 h-8 rounded-lg text-xs font-medium border transition-colors ${
                 cat === c
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
@@ -731,7 +828,10 @@ function CollectionGrid({
           {(['all', 'owned', 'locked'] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                sounds.click();
+                setFilter(f);
+              }}
               className={`interactive px-2.5 h-7 rounded-md text-[11px] font-medium transition-colors ${
                 filter === f
                   ? 'bg-slate-800 text-slate-200'
@@ -755,6 +855,7 @@ function CollectionGrid({
             <button
               key={c.id}
               onClick={() => onPreview(c)}
+              onMouseEnter={() => sounds.hover()}
               className={`
                 interactive relative text-left p-2 rounded-xl border transition-all
                 ${owned ? rar.border + ' ' + rar.bg : 'border-slate-800 bg-slate-950/60'}
