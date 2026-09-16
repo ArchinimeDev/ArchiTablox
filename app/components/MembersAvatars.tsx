@@ -7,6 +7,7 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 const AVATAR_COLORS = [
@@ -62,10 +63,23 @@ export function MembersAvatars({ boardId, onOpenShare }: Props) {
         {visible.map((m) => (
           <div
             key={m.user_id}
-            className={`w-5 h-5 rounded-full ${getColor(m.email)} flex items-center justify-center text-[9px] font-bold text-white ring-2 ring-slate-900 group-hover:ring-slate-800 transition-colors`}
+            className="w-5 h-5 rounded-full overflow-hidden ring-2 ring-slate-900 group-hover:ring-slate-800 transition-colors shrink-0"
             title={m.email}
           >
-            {m.email.charAt(0).toUpperCase()}
+            {m.avatar_url ? (
+              <img
+                src={m.avatar_url}
+                alt=""
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div
+                className={`w-full h-full ${getColor(m.email)} flex items-center justify-center text-[9px] font-bold text-white`}
+              >
+                {m.email.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
         ))}
         {extra > 0 && (

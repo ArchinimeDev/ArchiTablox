@@ -10,6 +10,7 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 const AVATAR_COLORS = [
@@ -126,7 +127,6 @@ export function CardItem({
         ${isDragging ? 'cursor-grabbing' : ''}
       `}
     >
-      {/* Portada */}
       {coverStyle && <div className="h-16 w-full" style={coverStyle} />}
 
       <div className="p-2.5">
@@ -258,10 +258,23 @@ export function CardItem({
                   {assignees.slice(0, 3).map((m) => (
                     <div
                       key={m.user_id}
-                      className={`w-4 h-4 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10`}
+                      className="w-4 h-4 rounded-full overflow-hidden ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10 shrink-0"
                       title={m.email}
                     >
-                      {m.email.charAt(0).toUpperCase()}
+                      {m.avatar_url ? (
+                        <img
+                          src={m.avatar_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div
+                          className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white`}
+                        >
+                          {m.email.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {assignees.length > 3 && (

@@ -11,6 +11,7 @@ interface Member {
   user_id: string;
   email: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 const AVATAR_COLORS = [
@@ -195,7 +196,6 @@ export function CardModal({
   const [members, setMembers] = useState<Member[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Portada (estado local, se guarda con updateCard inmediatamente)
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState('');
 
@@ -244,7 +244,7 @@ export function CardModal({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, []);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -486,7 +486,6 @@ export function CardModal({
         className="bg-slate-900 sm:border border-slate-800 sm:rounded-xl rounded-none w-full max-w-lg shadow-2xl flex flex-col h-screen sm:h-auto sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Portada (si existe) */}
         {coverStyle && (
           <div
             className="h-24 sm:h-28 w-full rounded-t-none sm:rounded-t-xl relative shrink-0"
@@ -520,7 +519,6 @@ export function CardModal({
             </button>
           </div>
 
-          {/* Botón para añadir portada (si no existe) */}
           {!coverStyle && (
             <button
               type="button"
@@ -536,10 +534,8 @@ export function CardModal({
             </button>
           )}
 
-          {/* Picker de portada */}
           {showCoverPicker && (
             <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 mb-4">
-              {/* Colores */}
               <div className="mb-3">
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
                   Colores
@@ -558,7 +554,6 @@ export function CardModal({
                 </div>
               </div>
 
-              {/* Gradientes */}
               <div className="mb-3">
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
                   Gradientes
@@ -576,7 +571,6 @@ export function CardModal({
                 </div>
               </div>
 
-              {/* Imagen por URL */}
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5">
                   Imagen (URL)
@@ -792,10 +786,21 @@ export function CardModal({
                           : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950'
                       }`}
                     >
-                      <div
-                        className={`w-7 h-7 rounded-full ${getAvatarColor(m.email)} flex items-center justify-center text-[11px] font-bold text-white shrink-0`}
-                      >
-                        {m.email.charAt(0).toUpperCase()}
+                      <div className="w-7 h-7 rounded-full overflow-hidden shrink-0">
+                        {m.avatar_url ? (
+                          <img
+                            src={m.avatar_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div
+                            className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[11px] font-bold text-white`}
+                          >
+                            {m.email.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <div
@@ -1187,8 +1192,19 @@ export function CardModal({
                               : 'hover:bg-slate-800/60'
                           }`}
                         >
-                          <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400 shrink-0">
-                            {m.email.charAt(0).toUpperCase()}
+                          <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
+                            {m.avatar_url ? (
+                              <img
+                                src={m.avatar_url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400">
+                                {m.email.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           <span className="text-xs text-slate-100 truncate flex-1">
                             {local}

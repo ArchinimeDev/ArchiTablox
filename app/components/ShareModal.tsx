@@ -16,6 +16,7 @@ interface Member {
   email: string;
   role: 'owner' | 'editor' | 'viewer';
   created_at: string;
+  avatar_url?: string | null;
 }
 
 interface Invite {
@@ -127,7 +128,6 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
     setSending(true);
     const supabase = createClient();
 
-    // ✅ RPC para crear la invitación (bypass RLS)
     const { data: invData, error: invErr } = await supabase.rpc(
       'create_board_invite',
       {
@@ -160,7 +160,6 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
       return;
     }
 
-    // Generar token de link mágico (opcional)
     const token = generateToken();
     const { data: tokenData, error: tokenErr } = await supabase.rpc(
       'create_share_token',
@@ -173,7 +172,6 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
     );
 
     if (tokenErr || (tokenData as any)?.error) {
-      // No bloqueante: la invitación ya se creó
       setSuccess(
         `✓ Invitación enviada a ${targetEmail}. Verá la notificación al abrir la app.`
       );
@@ -234,7 +232,6 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
     if (!window.confirm(`¿Cancelar la invitación a ${invite.email}?`)) return;
     const supabase = createClient();
 
-    // ✅ RPC para cancelar (bypass RLS)
     const { data, error } = await supabase.rpc('cancel_board_invite', {
       p_invite_id: invite.id,
     });
@@ -244,7 +241,6 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
       return;
     }
 
-    // Revocar token asociado
     const tokenForEmail = tokens.find(
       (t) => t.invited_email === invite.email
     );
@@ -401,8 +397,17 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                       key={m.id}
                       className="flex items-center gap-2 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2"
                     >
-                      <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400 shrink-0">
-                        {m.email.charAt(0).toUpperCase()}
+                      <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400 shrink-0">
+                        {m.avatar_url ? (
+                          <img
+                            src={m.avatar_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          m.email.charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-slate-200 truncate">
