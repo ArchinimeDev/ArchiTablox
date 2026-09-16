@@ -10,7 +10,8 @@ type ViewMode =
   | 'archive'
   | 'profile'
   | 'shop'
-  | 'metrics';
+  | 'metrics'
+  | 'myCards';
 
 interface Props {
   board: Board | undefined;
@@ -93,7 +94,7 @@ export function MobileBottomNav({
     },
     {
       label: user ? 'Perfil' : 'Entrar',
-      active: view === 'profile' || view === 'shop' || view === 'metrics',
+      active: view === 'profile' || view === 'shop' || view === 'metrics' || view === 'myCards',
       onClick: () => {
         sounds.nav();
         onSetView('profile');
@@ -101,7 +102,7 @@ export function MobileBottomNav({
       icon: user ? (
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors overflow-hidden ${
-            view === 'profile' || view === 'shop' || view === 'metrics'
+            view === 'profile' || view === 'shop' || view === 'metrics' || view === 'myCards'
               ? 'ring-2 ring-amber-500'
               : 'ring-2 ring-amber-500/40'
           }`}
@@ -116,7 +117,7 @@ export function MobileBottomNav({
           ) : (
             <div
               className={`w-full h-full flex items-center justify-center ${
-                view === 'profile' || view === 'shop' || view === 'metrics'
+                view === 'profile' || view === 'shop' || view === 'metrics' || view === 'myCards'
                   ? 'bg-amber-500 text-gray-950'
                   : 'bg-amber-500/25 text-amber-400'
               }`}

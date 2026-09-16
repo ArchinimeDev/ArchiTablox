@@ -12,7 +12,8 @@ type ViewId =
   | 'archive'
   | 'profile'
   | 'shop'
-  | 'metrics';
+  | 'metrics'
+  | 'myCards';
 
 interface Props {
   boards: Board[];
@@ -22,6 +23,7 @@ interface Props {
   user: { email: string; name: string | null; avatarUrl: string | null } | null;
   view: ViewId;
   archivedCount: number;
+  myCardsCount: number;
   onSwitchBoard: (id: string) => void;
   onSetView: (v: ViewId) => void;
   onCreateBoard: (name: string) => void;
@@ -41,6 +43,7 @@ export function Sidebar({
   user,
   view,
   archivedCount,
+  myCardsCount,
   onSwitchBoard,
   onSetView,
   onCreateBoard,
@@ -254,6 +257,39 @@ export function Sidebar({
               {archivedCount > 0 && (
                 <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
                   {archivedCount > 99 ? '99+' : archivedCount}
+                </span>
+              )}
+            </button>
+            <button
+              data-active={view === 'myCards'}
+              onClick={() => {
+                sounds.nav();
+                onSetView('myCards');
+              }}
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                view === 'myCards'
+                  ? 'bg-slate-800 text-slate-100 font-medium'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={view === 'myCards' ? 'text-amber-400' : 'text-slate-500'}
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="flex-1 text-left">Mis tarjetas</span>
+              {myCardsCount > 0 && (
+                <span className="bg-amber-500/20 text-amber-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
+                  {myCardsCount > 99 ? '99+' : myCardsCount}
                 </span>
               )}
             </button>

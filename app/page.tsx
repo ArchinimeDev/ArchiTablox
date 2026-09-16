@@ -42,6 +42,7 @@ import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
 import { CommandPalette } from './components/CommandPalette';
 import { MetricsView } from './components/MetricsView';
+import { MyCardsView } from './components/MyCardsView';
 
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
@@ -60,7 +61,8 @@ type ViewMode =
   | 'archive'
   | 'profile'
   | 'shop'
-  | 'metrics';
+  | 'metrics'
+  | 'myCards';
 
 interface Member {
   user_id: string;
@@ -764,6 +766,20 @@ export default function Home() {
         user={user}
         view={view}
         archivedCount={archivedCards.length}
+        myCardsCount={
+          userId
+            ? boards.reduce((sum, b) => {
+                return (
+                  sum +
+                  Object.values(b.cards).filter(
+                    (c) =>
+                      !c.archived &&
+                      (c.assigneeIds ?? []).includes(userId)
+                  ).length
+                );
+              }, 0)
+            : 0
+        }
         onSwitchBoard={switchBoard}
         onSetView={setView}
         onCreateBoard={createBoard}
@@ -1050,6 +1066,25 @@ export default function Home() {
 
           {view === 'metrics' && <MetricsView board={activeBoard} />}
 
+          {view === 'myCards' && (
+            <MyCardsView
+              boards={boards}
+              userId={userId}
+              onOpenCard={(cardId, boardId) => {
+                if (boardId !== activeBoardId) {
+                  switchBoard(boardId);
+                  setPendingOpen({ cardId, boardId });
+                } else {
+                  setEditingId(cardId);
+                }
+              }}
+              onSwitchBoard={(boardId) => {
+                switchBoard(boardId);
+                setView('board');
+              }}
+            />
+          )}
+
           {view === 'search' && (
             <MobileSearchView
               search={search}
@@ -1255,6 +1290,23 @@ export default function Home() {
                       <rect x="16" y="4" width="3" height="14" />
                     </svg>
                     Métricas
+                  </button>
+                  <button
+                    onClick={() => {
+                      setView('myCards');
+                      setShowMobileMenu(false);
+                    }}
+                    className={`interactive flex items-center gap-2 px-3 h-10 rounded-lg text-sm ${
+                      view === 'myCards'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-slate-950/60 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Mis tarjetas
                   </button>
                 </div>
               </div>
