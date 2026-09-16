@@ -105,7 +105,7 @@ function LoginForm() {
     <main className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-xl mx-auto mb-3">
+          <div className="w-12 h-12 rounded-lg bg-amber-500 flex items-center justify-center text-gray-950 font-bold text-xl mx-auto mb-3">
             A
           </div>
           <h1 className="text-2xl font-bold text-slate-100">ArchiTablox</h1>
@@ -117,12 +117,12 @@ function LoginForm() {
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          {/* Botón Google */}
+          {/* Botón Google — colores fijos para que se vea en TODOS los temas */}
           <button
             type="button"
             onClick={handleGoogle}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-medium rounded-lg h-11 text-sm transition-colors"
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed text-gray-900 font-medium rounded-lg h-11 text-sm transition-colors shadow-sm"
           >
             {googleLoading ? (
               <svg
@@ -249,7 +249,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-950 font-medium rounded-lg py-2.5 text-sm transition-colors"
+              className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-gray-950 font-medium rounded-lg py-2.5 text-sm transition-colors"
             >
               {loading
                 ? 'Procesando...'
