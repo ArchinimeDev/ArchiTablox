@@ -66,6 +66,58 @@ interface UserInfo {
   avatarUrl: string | null;
 }
 
+// ============================================================
+// Extracción robusta del avatar de Supabase/Google
+// ============================================================
+function extractAvatarUrl(u: any): string | null {
+  const md = u?.user_metadata ?? {};
+  const raw = u?.raw_user_meta_data ?? {};
+  const identities: any[] = Array.isArray(u?.identities) ? u.identities : [];
+
+  const fromIdentities: string[] = [];
+  for (const i of identities) {
+    const d = i?.identity_data ?? {};
+    const candidates = [
+      d.avatar_url,
+      d.picture,
+      d.avatarUrl,
+      d.image,
+      d.profile_image_url,
+      d.photo,
+      d.photoURL,
+    ];
+    for (const c of candidates) {
+      if (typeof c === 'string' && c.startsWith('http')) {
+        fromIdentities.push(c);
+      }
+    }
+  }
+
+  const candidates: (string | undefined | null)[] = [
+    md.avatar_url,
+    md.picture,
+    md.avatarUrl,
+    md.image,
+    md.profile_image_url,
+    md.photo,
+    md.photoURL,
+    raw.avatar_url,
+    raw.picture,
+    raw.avatarUrl,
+    raw.image,
+    raw.profile_image_url,
+    raw.photo,
+    raw.photoURL,
+    ...fromIdentities,
+  ];
+
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.startsWith('http')) return c;
+  }
+
+  return null;
+}
+
 export default function Home() {
   const boards = useBoard((s) => s.boards);
   const activeBoardId = useBoard((s) => s.activeBoardId);
@@ -220,33 +272,16 @@ export default function Home() {
     const { setAdmin } = useProfile.getState();
 
     const buildUser = (u: any): UserInfo => {
-      const md = u?.user_metadata ?? {};
-      const raw = u?.raw_user_meta_data ?? {};
-      const identities: any[] = Array.isArray(u?.identities)
-        ? u.identities
-        : [];
-      const google = identities.find((i) => i?.provider === 'google');
-      const googleMd = google?.identity_data ?? {};
-      const firstMd = identities[0]?.identity_data ?? {};
+      const avatarUrl = extractAvatarUrl(u);
 
-      const avatarUrl =
-        md.avatar_url ||
-        md.picture ||
-        md.avatarUrl ||
-        md.image ||
-        googleMd.avatar_url ||
-        googleMd.picture ||
-        firstMd.avatar_url ||
-        firstMd.picture ||
-        raw.avatar_url ||
-        raw.picture ||
-        null;
-
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[auth] user_metadata:', md);
-        console.log('[auth] identities:', identities);
-        console.log('[auth] avatarUrl extraído:', avatarUrl);
-      }
+      // Logs de diagnóstico (temporalmente activos siempre)
+      console.log('═══ [auth] DIAGNÓSTICO ═══');
+      console.log('email:', u?.email);
+      console.log('user_metadata:', JSON.stringify(u?.user_metadata ?? {}, null, 2));
+      console.log('raw_user_meta_data:', JSON.stringify(u?.raw_user_meta_data ?? {}, null, 2));
+      console.log('identities:', JSON.stringify(u?.identities ?? [], null, 2));
+      console.log('avatarUrl extraído:', avatarUrl);
+      console.log('═══════════════════════════');
 
       return {
         email: u?.email ?? '',
