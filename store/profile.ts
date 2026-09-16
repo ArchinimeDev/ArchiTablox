@@ -6,21 +6,35 @@ import { getCosmetic, COSMETICS } from '@/lib/cosmetics';
 
 const ADMIN_EMAILS = ['archinime77@gmail.com'];
 
+// IDs de los temas gratis que SIEMPRE están desbloqueados
+const FREE_THEME_IDS = [
+  'th_light',
+  'th_dark',
+  'th_midnight',
+  'th_forest',
+  'th_sunset',
+  'th_rose',
+];
+
+const now = Date.now();
+
 const INITIAL: ProfileStats = {
   xp: 0,
   ap: 0,
   level: 1,
   owned: {
-    av_default: Date.now(),
-    fr_none: Date.now(),
-    bg_slate: Date.now(),
-    ti_none: Date.now(),
+    av_default: now,
+    fr_none: now,
+    bg_slate: now,
+    ti_none: now,
+    ...Object.fromEntries(FREE_THEME_IDS.map((id) => [id, now])),
   },
   equipped: {
     avatar: 'av_default',
     frame: 'fr_none',
     background: 'bg_slate',
     title: 'ti_none',
+    theme: 'th_light',
   },
 };
 
@@ -44,10 +58,15 @@ interface ProfileStore {
 
   setAdmin: (email: string | null | undefined) => void;
 
-  addXP: (xp: number, ap: number) => { leveledUp: boolean; oldLevel: number; newLevel: number };
+  addXP: (
+    xp: number,
+    ap: number
+  ) => { leveledUp: boolean; oldLevel: number; newLevel: number };
   buy: (cosmeticId: string) => boolean;
   equip: (cosmeticId: string) => void;
-  unequip: (category: 'avatar' | 'frame' | 'background' | 'title') => void;
+  unequip: (
+    category: 'avatar' | 'frame' | 'background' | 'title' | 'theme'
+  ) => void;
   grant: (cosmeticId: string) => void;
   reset: () => void;
 }
@@ -66,11 +85,10 @@ export const useProfile = create<ProfileStore>()(
           return;
         }
 
-        // Al ser admin, desbloqueamos TODOS los cosméticos automáticamente
         const allOwned: Record<string, number> = {};
-        const now = Date.now();
+        const ts = Date.now();
         for (const c of COSMETICS) {
-          allOwned[c.id] = now;
+          allOwned[c.id] = ts;
         }
 
         set((state) => ({
@@ -102,7 +120,6 @@ export const useProfile = create<ProfileStore>()(
           profile: {
             ...profile,
             xp: nextXP,
-            // Si es admin, no sumamos AP (lo mostramos como ∞)
             ap: isAdmin ? profile.ap : profile.ap + apGain,
             level: newLevel,
             owned,
@@ -117,7 +134,6 @@ export const useProfile = create<ProfileStore>()(
         if (!cosmetic) return false;
         const { profile, isAdmin } = get();
 
-        // Si es admin, siempre permite comprar sin restar AP
         if (isAdmin) {
           if (!profile.owned[cosmeticId]) {
             set({
@@ -130,6 +146,7 @@ export const useProfile = create<ProfileStore>()(
           return true;
         }
 
+        if (cosmetic.free) return false;
         if (!cosmetic.price) return false;
         if (profile.owned[cosmeticId]) return false;
         if (profile.ap < cosmetic.price) return false;
@@ -186,6 +203,27 @@ export const useProfile = create<ProfileStore>()(
 
       reset: () => set({ profile: INITIAL, isAdmin: false }),
     }),
-    { name: 'architablox-profile', version: 1 }
+    {
+      name: 'architablox-profile',
+      version: 2,
+      migrate: (persisted: any, version) => {
+        const next = persisted ?? {};
+
+        // v1 → v2: añadir temas gratis y equipar th_light por defecto
+        if (version < 2) {
+          const p = next.profile ?? {};
+          if (!p.owned) p.owned = {};
+          const ts = Date.now();
+          for (const id of FREE_THEME_IDS) {
+            if (!p.owned[id]) p.owned[id] = ts;
+          }
+          if (!p.equipped) p.equipped = {};
+          if (!p.equipped.theme) p.equipped.theme = 'th_light';
+          next.profile = p;
+        }
+
+        return next;
+      },
+    }
   )
 );

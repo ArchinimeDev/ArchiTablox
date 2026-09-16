@@ -40,7 +40,6 @@ import { TemplateModal } from './components/TemplateModal';
 import { ShareModal } from './components/ShareModal';
 import { MembersAvatars } from './components/MembersAvatars';
 import { WelcomeInvitesBanner } from './components/WelcomeInvitesBanner';
-import { ThemeToggle } from './components/ThemeToggle';
 import { CommandPalette } from './components/CommandPalette';
 
 // Layout
@@ -221,17 +220,36 @@ export default function Home() {
     const { setAdmin } = useProfile.getState();
 
     const buildUser = (u: any): UserInfo => {
-      // Supabase + Google guardan el avatar en varios sitios según el proveedor.
-      // Buscamos en orden de prioridad.
+      const md = u?.user_metadata ?? {};
+      const raw = u?.raw_user_meta_data ?? {};
+      const identities: any[] = Array.isArray(u?.identities)
+        ? u.identities
+        : [];
+      const google = identities.find((i) => i?.provider === 'google');
+      const googleMd = google?.identity_data ?? {};
+      const firstMd = identities[0]?.identity_data ?? {};
+
       const avatarUrl =
-        u.user_metadata?.avatar_url ??
-        u.user_metadata?.picture ??
-        u.identities?.[0]?.identity_data?.avatar_url ??
-        u.identities?.[0]?.identity_data?.picture ??
+        md.avatar_url ||
+        md.picture ||
+        md.avatarUrl ||
+        md.image ||
+        googleMd.avatar_url ||
+        googleMd.picture ||
+        firstMd.avatar_url ||
+        firstMd.picture ||
+        raw.avatar_url ||
+        raw.picture ||
         null;
 
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[auth] user_metadata:', md);
+        console.log('[auth] identities:', identities);
+        console.log('[auth] avatarUrl extraído:', avatarUrl);
+      }
+
       return {
-        email: u.email ?? '',
+        email: u?.email ?? '',
         avatarUrl,
       };
     };
@@ -699,6 +717,9 @@ export default function Home() {
           user={user}
           onOpenMenu={() => setShowMobileMenu(true)}
           onOpenCommand={() => setShowCommand(true)}
+          onOpenCard={(id) => setEditingId(id)}
+          onUpdateNotificationSettings={updateNotificationSettings}
+          onInviteAccepted={handleInviteAccepted}
         />
 
         {/* Banner de invitaciones */}
@@ -1137,16 +1158,6 @@ export default function Home() {
                     Calendario
                   </button>
                 </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800">
-                <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Tema
-                </div>
-                <ThemeToggle
-                  variant="menu"
-                  onToggle={() => setShowMobileMenu(false)}
-                />
               </div>
 
               <div className="pt-2 border-t border-slate-800">

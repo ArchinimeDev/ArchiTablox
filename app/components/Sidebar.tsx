@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import type { Board } from '@/types';
-import { ThemeToggle } from './ThemeToggle';
 import { LevelBadge } from './LevelBadge';
 
 type ViewId = 'board' | 'calendar' | 'search' | 'archive' | 'profile' | 'shop';
@@ -299,7 +298,7 @@ export function Sidebar({
         <div className="my-2 border-t border-slate-800" />
 
         {user ? (
-          <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-slate-900/60 mb-1">
+          <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-slate-900/60">
             <div className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 shrink-0 overflow-hidden">
               {user.avatarUrl ? (
                 <img
@@ -335,13 +334,11 @@ export function Sidebar({
         ) : (
           <a
             href="/login"
-            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg h-8 text-xs mb-1"
+            className="interactive w-full flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg h-8 text-xs"
           >
             Iniciar sesión
           </a>
         )}
-
-        <ThemeToggle variant="sidebar" />
       </div>
     </aside>
   );

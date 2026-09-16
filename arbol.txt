@@ -4,6 +4,7 @@ C:.
 |   .env.local
 |   .gitignore
 |   AGENTS.md
+|   arbol.txt
 |   CLAUDE.md
 |   eslint.config.mjs
 |   estructura.txt

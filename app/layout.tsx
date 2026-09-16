@@ -42,16 +42,53 @@ export const viewport: Viewport = {
 };
 
 // Script que se ejecuta ANTES de que React hidrate.
-// Lee el tema guardado y lo aplica al <html> para evitar flash.
+// Lee el tema equipado desde el perfil persistido y lo aplica al <html>
+// para evitar el "flash" de tema incorrecto en el primer render.
 const themeInitScript = `
 (function() {
   try {
-    var t = localStorage.getItem('architablox-theme') || 'light';
-    var valid = ['light','dark','midnight','forest','sunset','rose'];
-    if (valid.indexOf(t) === -1) t = 'light';
+    var themeMap = {
+      th_light: 'light',
+      th_dark: 'dark',
+      th_midnight: 'midnight',
+      th_forest: 'forest',
+      th_sunset: 'sunset',
+      th_rose: 'rose',
+      th_cyber: 'cyber',
+      th_ocean: 'ocean',
+      th_sakura: 'sakura',
+      th_paper: 'paper',
+      th_vaporwave: 'vaporwave'
+    };
+
+    var t = 'light';
+
+    // 1) Intenta leer el tema equipado desde el perfil
+    try {
+      var raw = localStorage.getItem('architablox-profile');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        var st = parsed && parsed.state;
+        var prof = st && st.profile;
+        var eq = prof && prof.equipped;
+        var id = eq && eq.theme;
+        if (id && themeMap[id]) t = themeMap[id];
+      }
+    } catch (e) {}
+
+    // 2) Fallback: clave legacy (por si el usuario venía de una versión antigua)
+    if (t === 'light') {
+      try {
+        var legacy = localStorage.getItem('architablox-theme');
+        if (legacy) t = legacy;
+      } catch (e) {}
+    }
+
+    // 3) Aplica
     document.documentElement.setAttribute('data-theme', t);
-    var isDark = t === 'dark' || t === 'midnight' || t === 'forest';
-    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    var dark = ['dark','midnight','forest','cyber','ocean','vaporwave'];
+    document.documentElement.style.colorScheme =
+      dark.indexOf(t) !== -1 ? 'dark' : 'light';
   } catch (e) {}
 })();
 `;

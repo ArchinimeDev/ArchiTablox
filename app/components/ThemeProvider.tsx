@@ -1,68 +1,80 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useProfile } from '@/store/profile';
 
-export const THEMES = [
-  // Gratis (por defecto)
-  { id: 'light',     name: 'Claro',       icon: '☀️', color: '#f8fafc', free: true },
-  { id: 'dark',      name: 'Oscuro',      icon: '🌙', color: '#020617',  free: true },
-  { id: 'midnight',  name: 'Medianoche',  icon: '🌌', color: '#0a0e27',  free: true },
-  { id: 'forest',    name: 'Bosque',      icon: '🌲', color: '#0a1a12',  free: true },
-  { id: 'sunset',    name: 'Atardecer',   icon: '🌅', color: '#fef3e2',  free: true },
-  { id: 'rose',      name: 'Rosa',        icon: '🌸', color: '#fff1f5',  free: true },
+export type ThemeId =
+  | 'light'
+  | 'dark'
+  | 'midnight'
+  | 'forest'
+  | 'sunset'
+  | 'rose'
+  | 'cyber'
+  | 'ocean'
+  | 'sakura'
+  | 'paper'
+  | 'vaporwave';
 
-  // Premium (tienda)
-  { id: 'cyber',     name: 'Cyber',       icon: '🌃', color: '#0a0a14',  free: false },
-  { id: 'ocean',     name: 'Océano',      icon: '🌊', color: '#031a2e',  free: false },
-  { id: 'sakura',    name: 'Sakura',      icon: '🌸', color: '#fff5f7',  free: false },
-  { id: 'paper',     name: 'Papel',       icon: '📜', color: '#faf6ef',  free: false },
-  { id: 'vaporwave', name: 'Vaporwave',   icon: '💜', color: '#1a0b2e',  free: false },
-] as const;
+const DARK_THEMES: ThemeId[] = [
+  'dark',
+  'midnight',
+  'forest',
+  'cyber',
+  'ocean',
+  'vaporwave',
+];
 
-export type ThemeId = typeof THEMES[number]['id'];
+const THEME_COLORS: Record<ThemeId, string> = {
+  light: '#f8fafc',
+  dark: '#0a0a0a',
+  midnight: '#0a0e27',
+  forest: '#0a1a12',
+  sunset: '#fef3e2',
+  rose: '#fff1f5',
+  cyber: '#0a0a14',
+  ocean: '#031a2e',
+  sakura: '#fff5f7',
+  paper: '#faf6ef',
+  vaporwave: '#1a0b2e',
+};
 
-export const DEFAULT_THEME: ThemeId = 'light';
-const STORAGE_KEY = 'architablox-theme';
+// Mapea id del cosmético → id del tema CSS
+const COSMETIC_TO_THEME: Record<string, ThemeId> = {
+  th_light: 'light',
+  th_dark: 'dark',
+  th_midnight: 'midnight',
+  th_forest: 'forest',
+  th_sunset: 'sunset',
+  th_rose: 'rose',
+  th_cyber: 'cyber',
+  th_ocean: 'ocean',
+  th_sakura: 'sakura',
+  th_paper: 'paper',
+  th_vaporwave: 'vaporwave',
+};
 
-export function applyTheme(theme: ThemeId) {
+export function resolveThemeId(cosmeticId: string | undefined): ThemeId {
+  if (!cosmeticId) return 'light';
+  return COSMETIC_TO_THEME[cosmeticId] ?? 'light';
+}
+
+export function applyTheme(themeId: ThemeId) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  root.setAttribute('data-theme', theme);
+  root.setAttribute('data-theme', themeId);
+  root.style.colorScheme = DARK_THEMES.includes(themeId) ? 'dark' : 'light';
 
-  const meta = THEMES.find((t) => t.id === theme);
-  const isDark =
-    theme === 'dark' ||
-    theme === 'midnight' ||
-    theme === 'forest' ||
-    theme === 'cyber' ||
-    theme === 'ocean' ||
-    theme === 'vaporwave';
-  root.style.colorScheme = isDark ? 'dark' : 'light';
-
-  const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if (metaTheme && meta) {
-    metaTheme.setAttribute('content', meta.color);
-  }
-}
-
-export function getSavedTheme(): ThemeId {
-  if (typeof window === 'undefined') return DEFAULT_THEME;
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved && THEMES.some((t) => t.id === saved)) {
-    return saved as ThemeId;
-  }
-  return DEFAULT_THEME;
-}
-
-export function saveTheme(theme: ThemeId) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME_COLORS[themeId]);
 }
 
 export function ThemeProvider() {
+  const equippedTheme = useProfile((s) => s.profile.equipped.theme);
+
   useEffect(() => {
-    applyTheme(getSavedTheme());
-  }, []);
+    applyTheme(resolveThemeId(equippedTheme));
+  }, [equippedTheme]);
 
   return null;
 }

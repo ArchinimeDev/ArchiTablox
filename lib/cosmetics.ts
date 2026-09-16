@@ -56,13 +56,23 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'ti_leyenda',     name: 'Leyenda',      category: 'title', rarity: 'mythic',    unlockedByLevel: 100, value: 'Leyenda' },
 
   // ----------------------------------------------------------
-  // TEMAS DE APP (premium, se compran con AP)
+  // TEMAS DE APP · gratis (siempre disponibles)
   // ----------------------------------------------------------
-  { id: 'th_cyber',      name: 'Cyber',       description: 'Neón azul sobre negro',       category: 'theme', rarity: 'rare',      price: 400,  value: 'cyber' },
-  { id: 'th_ocean',      name: 'Océano',      description: 'Azul profundo tranquilo',     category: 'theme', rarity: 'rare',      price: 400,  value: 'ocean' },
-  { id: 'th_sakura',     name: 'Sakura',      description: 'Rosa pastel suave',           category: 'theme', rarity: 'rare',      price: 500,  value: 'sakura' },
+  { id: 'th_light',     name: 'Claro',       description: 'Tema claro por defecto',       category: 'theme', rarity: 'common', free: true, value: 'light' },
+  { id: 'th_dark',      name: 'Oscuro',      description: 'Modo oscuro clásico',          category: 'theme', rarity: 'common', free: true, value: 'dark' },
+  { id: 'th_midnight',  name: 'Medianoche',  description: 'Azul profundo nocturno',       category: 'theme', rarity: 'common', free: true, value: 'midnight' },
+  { id: 'th_forest',    name: 'Bosque',      description: 'Verdes naturales',             category: 'theme', rarity: 'common', free: true, value: 'forest' },
+  { id: 'th_sunset',    name: 'Atardecer',   description: 'Cálidos tonos naranja',        category: 'theme', rarity: 'common', free: true, value: 'sunset' },
+  { id: 'th_rose',      name: 'Rosa',        description: 'Rosas suaves',                 category: 'theme', rarity: 'common', free: true, value: 'rose' },
+
+  // ----------------------------------------------------------
+  // TEMAS DE APP · premium (se compran con AP)
+  // ----------------------------------------------------------
+  { id: 'th_cyber',      name: 'Cyber',       description: 'Neón azul sobre negro',        category: 'theme', rarity: 'rare',      price: 400,  value: 'cyber' },
+  { id: 'th_ocean',      name: 'Océano',      description: 'Azul profundo tranquilo',      category: 'theme', rarity: 'rare',      price: 400,  value: 'ocean' },
+  { id: 'th_sakura',     name: 'Sakura',      description: 'Rosa pastel suave',            category: 'theme', rarity: 'rare',      price: 500,  value: 'sakura' },
   { id: 'th_paper',      name: 'Papel',       description: 'Crema cálido estilo cuaderno', category: 'theme', rarity: 'epic',      price: 800,  value: 'paper' },
-  { id: 'th_vaporwave',  name: 'Vaporwave',   description: 'Púrpura y rosa retro',        category: 'theme', rarity: 'legendary', price: 1500, value: 'vaporwave' },
+  { id: 'th_vaporwave',  name: 'Vaporwave',   description: 'Púrpura y rosa retro',         category: 'theme', rarity: 'legendary', price: 1500, value: 'vaporwave' },
 ];
 
 // ============================================================
