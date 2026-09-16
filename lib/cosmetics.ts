@@ -47,56 +47,107 @@ export const COSMETICS: Cosmetic[] = [
   // ----------------------------------------------------------
   // TÍTULOS
   // ----------------------------------------------------------
-  { id: 'ti_none',       name: 'Sin título',    category: 'title', rarity: 'common',    free: true, value: '' },
-  { id: 'ti_novato',     name: 'Novato',        category: 'title', rarity: 'common',    unlockedByLevel: 4, value: 'Novato' },
-  { id: 'ti_aprendiz',   name: 'Aprendiz',      category: 'title', rarity: 'common',    unlockedByLevel: 7, value: 'Aprendiz' },
-  { id: 'ti_constructor',name: 'Constructor',   category: 'title', rarity: 'rare',      unlockedByLevel: 15, value: 'Constructor' },
-  { id: 'ti_arquitecto', name: 'Arquitecto',    category: 'title', rarity: 'epic',      unlockedByLevel: 40, value: 'Arquitecto' },
-  { id: 'ti_maestro',    name: 'Maestro',       category: 'title', rarity: 'legendary', unlockedByLevel: 75, value: 'Maestro' },
-  { id: 'ti_leyenda',    name: 'Leyenda',       category: 'title', rarity: 'mythic',    unlockedByLevel: 100, value: 'Leyenda' },
+  { id: 'ti_none',        name: 'Sin título',   category: 'title', rarity: 'common',    free: true, value: '' },
+  { id: 'ti_novato',      name: 'Novato',       category: 'title', rarity: 'common',    unlockedByLevel: 4, value: 'Novato' },
+  { id: 'ti_aprendiz',    name: 'Aprendiz',     category: 'title', rarity: 'common',    unlockedByLevel: 7, value: 'Aprendiz' },
+  { id: 'ti_constructor', name: 'Constructor',  category: 'title', rarity: 'rare',      unlockedByLevel: 15, value: 'Constructor' },
+  { id: 'ti_arquitecto',  name: 'Arquitecto',   category: 'title', rarity: 'epic',      unlockedByLevel: 40, value: 'Arquitecto' },
+  { id: 'ti_maestro',     name: 'Maestro',      category: 'title', rarity: 'legendary', unlockedByLevel: 75, value: 'Maestro' },
+  { id: 'ti_leyenda',     name: 'Leyenda',      category: 'title', rarity: 'mythic',    unlockedByLevel: 100, value: 'Leyenda' },
 ];
+
+// ============================================================
+// HELPERS DE BÚSQUEDA
+// ============================================================
 
 export function getCosmetic(id: string): Cosmetic | undefined {
   return COSMETICS.find((c) => c.id === id);
 }
 
-export function getCosmeticsByCategory(category: Cosmetic['category']): Cosmetic[] {
+export function getCosmeticsByCategory(
+  category: Cosmetic['category']
+): Cosmetic[] {
   return COSMETICS.filter((c) => c.category === category);
 }
 
-export const RARITY_COLORS: Record<Cosmetic['rarity'], { border: string; bg: string; text: string; label: string }> = {
-  common:    { border: 'border-slate-700',   bg: 'bg-slate-800/40',      text: 'text-slate-400',  label: 'Común' },
-  rare:      { border: 'border-blue-500/60', bg: 'bg-blue-500/10',       text: 'text-blue-400',   label: 'Raro' },
-  epic:      { border: 'border-violet-500/60', bg: 'bg-violet-500/10',   text: 'text-violet-400', label: 'Épico' },
-  legendary: { border: 'border-amber-500/60', bg: 'bg-amber-500/10',     text: 'text-amber-400',  label: 'Legendario' },
-  mythic:    { border: 'border-red-500/60',  bg: 'bg-red-500/10',        text: 'text-red-400',    label: 'Mítico' },
+// ============================================================
+// RAREZAS (colores)
+// ============================================================
+
+export const RARITY_COLORS: Record<
+  Cosmetic['rarity'],
+  { border: string; bg: string; text: string; label: string }
+> = {
+  common: {
+    border: 'border-slate-700',
+    bg: 'bg-slate-800/40',
+    text: 'text-slate-400',
+    label: 'Común',
+  },
+  rare: {
+    border: 'border-blue-500/60',
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-400',
+    label: 'Raro',
+  },
+  epic: {
+    border: 'border-violet-500/60',
+    bg: 'bg-violet-500/10',
+    text: 'text-violet-400',
+    label: 'Épico',
+  },
+  legendary: {
+    border: 'border-amber-500/60',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
+    label: 'Legendario',
+  },
+  mythic: {
+    border: 'border-red-500/60',
+    bg: 'bg-red-500/10',
+    text: 'text-red-400',
+    label: 'Mítico',
+  },
 };
 
 // ============================================================
 // HELPERS PARA APLICAR COSMÉTICOS
 // ============================================================
 
+/**
+ * Devuelve las clases Tailwind para el marco del avatar.
+ * Ahora busca el cosmético por ID y usa su `value` para decidir.
+ */
 export function getFrameClass(frameId: string | undefined): string {
-  switch (frameId) {
+  if (!frameId) return '';
+  const cosmetic = getCosmetic(frameId);
+  const value = cosmetic?.value ?? 'none';
+
+  switch (value) {
+    case 'none':
+      return '';
     case 'ring':
-      return 'ring-2 ring-amber-400';
+      return 'p-[3px] bg-gradient-to-br from-amber-400 to-amber-600';
     case 'ring-dual':
-      return 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950';
+      return 'p-[3px] bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_20px_-4px_rgba(251,191,36,0.9)]';
     case 'waves':
-      return 'ring-2 ring-cyan-400 shadow-[0_0_20px_-4px_rgba(34,211,238,0.7)]';
+      return 'p-[3px] bg-gradient-to-br from-cyan-400 to-blue-500 shadow-[0_0_25px_-4px_rgba(34,211,238,0.9)]';
     case 'crystal':
-      return 'ring-2 ring-violet-400 shadow-[0_0_25px_-4px_rgba(167,139,250,0.8)]';
+      return 'p-[3px] bg-gradient-to-br from-violet-400 via-purple-500 to-fuchsia-500 shadow-[0_0_30px_-4px_rgba(167,139,250,1)]';
     case 'crown':
-      return 'ring-[3px] ring-amber-400 shadow-[0_0_30px_-2px_rgba(251,191,36,0.9)]';
+      return 'p-[3px] bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 shadow-[0_0_35px_-2px_rgba(251,191,36,1)]';
     case 'aurora':
-      return 'ring-[3px] ring-transparent bg-gradient-to-tr from-cyan-400 via-violet-400 to-pink-400 p-[2px]';
+      return 'p-[3px] bg-gradient-to-br from-cyan-400 via-violet-400 to-pink-400 shadow-[0_0_35px_-2px_rgba(232,121,249,1)]';
     case 'legend':
-      return 'ring-[3px] ring-fuchsia-400 shadow-[0_0_35px_-2px_rgba(232,121,249,1)]';
+      return 'p-[4px] bg-gradient-to-br from-fuchsia-400 via-pink-500 to-red-500 shadow-[0_0_45px_-2px_rgba(232,121,249,1)]';
     default:
       return '';
   }
 }
 
+/**
+ * Devuelve el contenido del avatar (emoji o inicial).
+ */
 export function getAvatarPreview(
   avatarId: string | undefined,
   email: string
@@ -108,8 +159,14 @@ export function getAvatarPreview(
   return cosmetic.value;
 }
 
-export function getBackgroundStyle(backgroundId: string | undefined): React.CSSProperties {
+/**
+ * Devuelve el estilo CSS del fondo del perfil.
+ */
+export function getBackgroundStyle(
+  backgroundId: string | undefined
+): React.CSSProperties {
   const cosmetic = backgroundId ? getCosmetic(backgroundId) : null;
-  const value = cosmetic?.value ?? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
+  const value =
+    cosmetic?.value ?? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';
   return { background: value };
 }
