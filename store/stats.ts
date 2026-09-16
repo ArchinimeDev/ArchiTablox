@@ -1,16 +1,21 @@
+// store/stats.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserStats, TrackAction } from '@/types';
 
 function todayKey(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
 }
 
 function yesterdayKey(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
 }
 
 const INITIAL: UserStats = {
@@ -50,6 +55,7 @@ export const useStats = create<StatsStore>()(
         set((state) => {
           const s = state.stats;
           const counters: Partial<UserStats> = {};
+
           switch (action) {
             case 'card_created':
             case 'card_created_full':
@@ -117,9 +123,10 @@ export const useStats = create<StatsStore>()(
           const today = todayKey();
           const yesterday = yesterdayKey();
           const last = state.stats.streak.lastActiveDate;
+
           if (last === today || last === yesterday || last === '') return state;
+
           return {
-            ...state,
             stats: {
               ...state.stats,
               streak: { ...state.stats.streak, current: 0 },

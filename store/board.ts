@@ -1,3 +1,4 @@
+// store/board.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
@@ -38,8 +39,6 @@ const MAX_ACTIVITY = 200;
 
 /**
  * Genera un UUID v4 válido (compatible con Supabase).
- * - Usa crypto.randomUUID() cuando está disponible.
- * - Fallback manual para entornos viejos.
  */
 const uid = (): string => {
   if (
@@ -225,7 +224,7 @@ interface Store {
   archiveCard: (cardId: string) => void;
   restoreCard: (cardId: string) => void;
   emptyArchive: () => void;
-  moveCard: (cardId: string, toColumnId: string, toIndex?: number) => void;
+  moveCard: (cardId: string, toColumnId: string, toIndex?: number) => boolean;
 
   addSubtask: (cardId: string, title: string) => void;
   updateSubtask: (cardId: string, subtaskId: string, title: string) => void;
@@ -458,7 +457,8 @@ export const useBoard = create<Store>()(
           })
         ),
 
-      moveCard: (cardId, toColumnId, toIndex) =>
+      moveCard: (cardId, toColumnId, toIndex) => {
+        let blocked = false;
         set((state) =>
           withActiveBoard(state, (board) => {
             const card = board.cards[cardId];
@@ -484,6 +484,7 @@ export const useBoard = create<Store>()(
               targetCol.wipLimit &&
               targetCol.cardIds.length >= targetCol.wipLimit
             ) {
+              blocked = true;
               return board;
             }
 
@@ -567,7 +568,9 @@ export const useBoard = create<Store>()(
               activity,
             };
           })
-        ),
+        );
+        return !blocked;
+      },
 
       addSubtask: (cardId, title) =>
         set((state) =>
@@ -1107,10 +1110,8 @@ export const useBoard = create<Store>()(
     }),
     {
       name: 'kanban-quest-storage',
-      // Subimos a 22: esta versión regenera IDs viejos (id_xxx) a UUIDs válidos
       version: 22,
       migrate: (persisted: any, version) => {
-        // Migración desde versiones muy antiguas (formato columnas sueltas)
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {
             id: uid(),
@@ -1129,15 +1130,12 @@ export const useBoard = create<Store>()(
         }
 
         if (persisted?.boards && Array.isArray(persisted.boards)) {
-          // Detectar si algún board tiene un ID no-UUID (formato antiguo)
           const hasInvalidIds = persisted.boards.some(
             (b: Board) => !isUuid(b.id)
           );
 
-          // Si hay IDs inválidos, regenerar TODOS los boards con UUIDs nuevos
           if (hasInvalidIds) {
             const regenerated: Board[] = persisted.boards.map((b: Board) => {
-              // Si ya es UUID, lo dejamos como está
               if (isUuid(b.id)) {
                 return {
                   ...b,
@@ -1150,7 +1148,6 @@ export const useBoard = create<Store>()(
                   activity: b.activity ?? [],
                 };
               }
-              // Si no es UUID, regeneramos el board completo
               const regen = regenerateBoardIds(b);
               regen.name = b.name;
               return regen;
@@ -1163,7 +1160,6 @@ export const useBoard = create<Store>()(
             };
           }
 
-          // Si todos los IDs son válidos, solo normalizar campos opcionales
           persisted.boards = persisted.boards.map((b: Board) => ({
             ...b,
             notificationSettings:

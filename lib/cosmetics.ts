@@ -1,3 +1,5 @@
+// lib/cosmetics.ts
+import type { CSSProperties, ReactNode } from 'react';
 import type { Cosmetic } from '@/types';
 
 // ============================================================
@@ -5,9 +7,7 @@ import type { Cosmetic } from '@/types';
 // ============================================================
 
 export const COSMETICS: Cosmetic[] = [
-  // ----------------------------------------------------------
-  // AVATARES (emoji)
-  // ----------------------------------------------------------
+  // AVATARES
   { id: 'av_default',   name: 'Inicial',    category: 'avatar', rarity: 'common',  free: true, value: 'initial', preview: 'A' },
   { id: 'av_fire',      name: 'Fuego',      category: 'avatar', rarity: 'common',  price: 50,  value: '🔥',  preview: '🔥' },
   { id: 'av_bolt',      name: 'Rayo',       category: 'avatar', rarity: 'common',  price: 100, value: '⚡',  preview: '⚡' },
@@ -19,9 +19,7 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'av_eagle',     name: 'Águila',     category: 'avatar', rarity: 'legendary', unlockedByLevel: 30, value: '🦅', preview: '🦅' },
   { id: 'av_dragon',    name: 'Dragón',     category: 'avatar', rarity: 'mythic',  unlockedByLevel: 50, value: '🐉', preview: '🐉' },
 
-  // ----------------------------------------------------------
   // MARCOS
-  // ----------------------------------------------------------
   { id: 'fr_none',      name: 'Sin marco',     category: 'frame', rarity: 'common',    free: true, value: 'none' },
   { id: 'fr_ring',      name: 'Anillo',        category: 'frame', rarity: 'common',    price: 80,  value: 'ring' },
   { id: 'fr_ring_dual', name: 'Anillo doble',  category: 'frame', rarity: 'rare',      price: 200, value: 'ring-dual' },
@@ -31,9 +29,7 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'fr_aurora',    name: 'Aurora',        category: 'frame', rarity: 'legendary', unlockedByLevel: 50, value: 'aurora' },
   { id: 'fr_legend',    name: 'Leyenda',       category: 'frame', rarity: 'mythic',    unlockedByLevel: 100, value: 'legend' },
 
-  // ----------------------------------------------------------
   // FONDOS
-  // ----------------------------------------------------------
   { id: 'bg_slate',     name: 'Slate',         category: 'background', rarity: 'common',  free: true, value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
   { id: 'bg_sunrise',   name: 'Amanecer',      category: 'background', rarity: 'common',  price: 100, value: 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' },
   { id: 'bg_grid',      name: 'Cuadrícula',    category: 'background', rarity: 'common',  price: 150, value: 'repeating-linear-gradient(45deg, #1e293b 0, #1e293b 2px, #0f172a 2px, #0f172a 12px)' },
@@ -44,9 +40,7 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'bg_cyberpunk', name: 'Cyberpunk',     category: 'background', rarity: 'legendary', unlockedByLevel: 25, value: 'linear-gradient(135deg, #f0abfc 0%, #7c3aed 40%, #0f172a 100%)' },
   { id: 'bg_plasma',    name: 'Plasma',        category: 'background', rarity: 'legendary', price: 1200, value: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 50%, #facc15 100%)' },
 
-  // ----------------------------------------------------------
   // TÍTULOS
-  // ----------------------------------------------------------
   { id: 'ti_none',        name: 'Sin título',   category: 'title', rarity: 'common',    free: true, value: '' },
   { id: 'ti_novato',      name: 'Novato',       category: 'title', rarity: 'common',    unlockedByLevel: 4, value: 'Novato' },
   { id: 'ti_aprendiz',    name: 'Aprendiz',     category: 'title', rarity: 'common',    unlockedByLevel: 7, value: 'Aprendiz' },
@@ -55,9 +49,7 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'ti_maestro',     name: 'Maestro',      category: 'title', rarity: 'legendary', unlockedByLevel: 75, value: 'Maestro' },
   { id: 'ti_leyenda',     name: 'Leyenda',      category: 'title', rarity: 'mythic',    unlockedByLevel: 100, value: 'Leyenda' },
 
-  // ----------------------------------------------------------
-  // TEMAS DE APP · gratis (siempre disponibles)
-  // ----------------------------------------------------------
+  // TEMAS GRATIS
   { id: 'th_light',     name: 'Claro',       description: 'Tema claro por defecto',       category: 'theme', rarity: 'common', free: true, value: 'light' },
   { id: 'th_dark',      name: 'Oscuro',      description: 'Modo oscuro clásico',          category: 'theme', rarity: 'common', free: true, value: 'dark' },
   { id: 'th_midnight',  name: 'Medianoche',  description: 'Azul profundo nocturno',       category: 'theme', rarity: 'common', free: true, value: 'midnight' },
@@ -65,9 +57,7 @@ export const COSMETICS: Cosmetic[] = [
   { id: 'th_sunset',    name: 'Atardecer',   description: 'Cálidos tonos naranja',        category: 'theme', rarity: 'common', free: true, value: 'sunset' },
   { id: 'th_rose',      name: 'Rosa',        description: 'Rosas suaves',                 category: 'theme', rarity: 'common', free: true, value: 'rose' },
 
-  // ----------------------------------------------------------
-  // TEMAS DE APP · premium (se compran con AP)
-  // ----------------------------------------------------------
+  // TEMAS PREMIUM
   { id: 'th_cyber',      name: 'Cyber',       description: 'Neón azul sobre negro',        category: 'theme', rarity: 'rare',      price: 400,  value: 'cyber' },
   { id: 'th_ocean',      name: 'Océano',      description: 'Azul profundo tranquilo',      category: 'theme', rarity: 'rare',      price: 400,  value: 'ocean' },
   { id: 'th_sakura',     name: 'Sakura',      description: 'Rosa pastel suave',            category: 'theme', rarity: 'rare',      price: 500,  value: 'sakura' },
@@ -105,7 +95,7 @@ export const RARITY_COLORS: Record<
 };
 
 // ============================================================
-// FRAMES (solo anillo, sin rellenar)
+// FRAMES
 // ============================================================
 
 export function getFrameClass(frameId: string | undefined): string {
@@ -142,7 +132,7 @@ export function getFrameClass(frameId: string | undefined): string {
 export function getAvatarPreview(
   avatarId: string | undefined,
   email: string
-): React.ReactNode {
+): ReactNode {
   const cosmetic = avatarId ? getCosmetic(avatarId) : null;
   if (!cosmetic || cosmetic.value === 'initial') {
     return email.charAt(0).toUpperCase();
@@ -152,7 +142,7 @@ export function getAvatarPreview(
 
 export function getBackgroundStyle(
   backgroundId: string | undefined
-): React.CSSProperties {
+): CSSProperties {
   const cosmetic = backgroundId ? getCosmetic(backgroundId) : null;
   const value =
     cosmetic?.value ?? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)';

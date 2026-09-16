@@ -1,9 +1,33 @@
+// app/api/send-email/route.ts
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { createClient } from '@/utils/supabase/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-type EmailType = 'assigned' | 'comment' | 'due_soon' | 'overdue' | 'test';
+const ALLOWED_TYPES = ['assigned', 'comment', 'due_soon', 'overdue', 'test'] as const;
+type EmailType = (typeof ALLOWED_TYPES)[number];
+
+// Rate limit en memoria (por instancia serverless). Suficiente para frenar abuso casual.
+const RATE_LIMIT = new Map<string, { count: number; resetAt: number }>();
+const MAX_PER_HOUR = 30;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = RATE_LIMIT.get(userId);
+  if (!entry || entry.resetAt < now) {
+    RATE_LIMIT.set(userId, { count: 1, resetAt: now + 3_600_000 });
+    return true;
+  }
+  if (entry.count >= MAX_PER_HOUR) return false;
+  entry.count++;
+  return true;
+}
+
+function sanitize(s: unknown, max = 200): string {
+  if (typeof s !== 'string') return '';
+  return s.slice(0, max).replace(/[<>]/g, '');
+}
 
 interface EmailPayload {
   to: string;
@@ -84,7 +108,7 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
         html: wrap(
           '⏰',
           'Una tarjeta vence pronto',
-          `<b>${data.cardTitle ?? ''}</b> vence el <b>${data.dueDate ?? ''}</b>. No la dejes para después.`
+          `<b>${data.cardTitle ?? ''}</b> vence el <b>${data.dueDate ?? ''}</b>.`
         ),
       };
     case 'overdue':
@@ -102,7 +126,7 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
         html: wrap(
           '✅',
           '¡Las notificaciones funcionan!',
-          `Este es un email de prueba. Si lo estás viendo, todo está configurado correctamente.`
+          `Este es un email de prueba.`
         ),
       };
   }
@@ -110,37 +134,79 @@ function buildEmail(payload: EmailPayload): { subject: string; html: string } {
 
 export async function POST(request: Request) {
   try {
+    // 1. Auth obligatoria
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    // 2. Rate limit
+    if (!checkRateLimit(user.id)) {
+      return NextResponse.json(
+        { error: 'Demasiados envíos. Intenta más tarde.' },
+        { status: 429 }
+      );
+    }
+
+    // 3. Config
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
-        { error: 'RESEND_API_KEY no configurado' },
+        { error: 'Servicio no configurado' },
         { status: 500 }
       );
     }
 
-    const payload: EmailPayload = await request.json();
+    // 4. Validar payload
+    const body = await request.json();
+    const { to, type, data } = body ?? {};
 
-    if (!payload.to || !payload.type) {
+    if (typeof to !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json(
-        { error: 'Faltan campos: to, type' },
+        { error: 'Email destino inválido' },
+        { status: 400 }
+      );
+    }
+    if (!ALLOWED_TYPES.includes(type)) {
+      return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 });
+    }
+    if (data && typeof data !== 'object') {
+      return NextResponse.json({ error: 'data inválido' }, { status: 400 });
+    }
+
+    // 5. Anti-abuse: no auto-notificarse (excepto test)
+    if (type !== 'test' && to.toLowerCase() === user.email?.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'No puedes notificarte a ti mismo' },
         { status: 400 }
       );
     }
 
-    const { subject, html } = buildEmail(payload);
+    // 6. Sanitizar
+    const safeData = {
+      cardTitle: sanitize(data?.cardTitle, 200),
+      boardName: sanitize(data?.boardName, 100),
+      fromUser: sanitize(data?.fromUser, 100),
+      commentText: sanitize(data?.commentText, 500),
+      dueDate: sanitize(data?.dueDate, 40),
+    };
 
-    const from = 'ArchiTablox <onboarding@resend.dev>';
+    const { subject, html } = buildEmail({ to, type, data: safeData });
 
     const result = await resend.emails.send({
-      from,
-      to: payload.to,
+      from: 'ArchiTablox <onboarding@resend.dev>',
+      to,
       subject,
       html,
     });
 
     if (result.error) {
-      console.error('[EMAIL] Error de Resend:', result.error);
+      console.error('[EMAIL] Resend:', result.error);
       return NextResponse.json(
-        { error: result.error.message },
+        { error: 'No se pudo enviar' },
         { status: 500 }
       );
     }
@@ -148,9 +214,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, id: result.data?.id });
   } catch (err: any) {
     console.error('[EMAIL] Error:', err);
-    return NextResponse.json(
-      { error: err.message ?? 'Error desconocido' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }

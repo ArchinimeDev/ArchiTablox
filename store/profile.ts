@@ -1,10 +1,10 @@
+// store/profile.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ProfileStats } from '@/types';
 import { levelFromXP } from '@/lib/xp';
 import { getCosmetic, COSMETICS } from '@/lib/cosmetics';
-
-const ADMIN_EMAILS = ['archinime77@gmail.com'];
+import { useAdmin } from './admin';
 
 // IDs de los temas gratis que SIEMPRE están desbloqueados
 const FREE_THEME_IDS = [
@@ -54,9 +54,6 @@ const COSMETICS_BY_LEVEL: Record<number, string[]> = {
 
 interface ProfileStore {
   profile: ProfileStats;
-  isAdmin: boolean;
-
-  setAdmin: (email: string | null | undefined) => void;
 
   addXP: (
     xp: number,
@@ -75,33 +72,10 @@ export const useProfile = create<ProfileStore>()(
   persist(
     (set, get) => ({
       profile: INITIAL,
-      isAdmin: false,
-
-      setAdmin: (email) => {
-        const isAdmin = !!email && ADMIN_EMAILS.includes(email.toLowerCase());
-
-        if (!isAdmin) {
-          set({ isAdmin: false });
-          return;
-        }
-
-        const allOwned: Record<string, number> = {};
-        const ts = Date.now();
-        for (const c of COSMETICS) {
-          allOwned[c.id] = ts;
-        }
-
-        set((state) => ({
-          isAdmin: true,
-          profile: {
-            ...state.profile,
-            owned: { ...state.profile.owned, ...allOwned },
-          },
-        }));
-      },
 
       addXP: (xpGain, apGain) => {
-        const { profile, isAdmin } = get();
+        const { profile } = get();
+        const isAdmin = useAdmin.getState().isAdmin;
         const oldLevel = profile.level;
         const nextXP = profile.xp + xpGain;
         const newLevel = levelFromXP(nextXP);
@@ -132,19 +106,11 @@ export const useProfile = create<ProfileStore>()(
       buy: (cosmeticId) => {
         const cosmetic = getCosmetic(cosmeticId);
         if (!cosmetic) return false;
-        const { profile, isAdmin } = get();
 
-        if (isAdmin) {
-          if (!profile.owned[cosmeticId]) {
-            set({
-              profile: {
-                ...profile,
-                owned: { ...profile.owned, [cosmeticId]: Date.now() },
-              },
-            });
-          }
-          return true;
-        }
+        // Admin: desbloqueado virtualmente, no se persiste en `owned`
+        if (useAdmin.getState().isAdmin) return true;
+
+        const { profile } = get();
 
         if (cosmetic.free) return false;
         if (!cosmetic.price) return false;
@@ -164,7 +130,8 @@ export const useProfile = create<ProfileStore>()(
       equip: (cosmeticId) => {
         const cosmetic = getCosmetic(cosmeticId);
         if (!cosmetic) return;
-        const { profile, isAdmin } = get();
+        const { profile } = get();
+        const isAdmin = useAdmin.getState().isAdmin;
         if (!isAdmin && !profile.owned[cosmeticId]) return;
 
         set({
@@ -201,15 +168,18 @@ export const useProfile = create<ProfileStore>()(
         });
       },
 
-      reset: () => set({ profile: INITIAL, isAdmin: false }),
+      reset: () => set({ profile: INITIAL }),
     }),
     {
       name: 'architablox-profile',
-      version: 2,
+      version: 3,
       migrate: (persisted: any, version) => {
         const next = persisted ?? {};
 
-        // v1 → v2: añadir temas gratis y equipar th_light por defecto
+        // v2 → v3: isAdmin ya no se persiste en este store
+        if (next.isAdmin !== undefined) delete next.isAdmin;
+
+        // v1 → v2: añadir temas gratis y equipar th_light
         if (version < 2) {
           const p = next.profile ?? {};
           if (!p.owned) p.owned = {};

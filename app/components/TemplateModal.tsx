@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CardTemplate, Priority } from '@/types';
 import { RARITY_LABEL } from '@/lib/gamification';
 
@@ -41,15 +41,6 @@ export function TemplateModal({ template, onClose, onSave, onDelete }: Props) {
     (template?.subtasks ?? []).join('\n')
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSave();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
-
   const handleSave = () => {
     if (!name.trim()) return;
 
@@ -74,6 +65,21 @@ export function TemplateModal({ template, onClose, onSave, onDelete }: Props) {
     });
     onClose();
   };
+
+  // ✅ FIX: ref para evitar stale closure en Ctrl+Enter
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSaveRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   return (
     <div

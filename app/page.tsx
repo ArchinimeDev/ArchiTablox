@@ -19,13 +19,14 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { useBoard } from '@/store/board';
-import { useProfile } from '@/store/profile';
+import { useAdmin } from '@/store/admin';
 import type { Card as CardType, CardTemplate, Priority } from '@/types';
 import { RARITY_LABEL } from '@/lib/gamification';
 import { dayKey } from '@/lib/dateUtils';
 import { createClient } from '@/utils/supabase/client';
 import { useSyncBoards } from './hooks/useSyncBoards';
 import { useXP } from '@/hooks/useXP';
+import { useToast } from './components/Toast';
 
 import { ColumnView } from './components/ColumnView';
 import { CardItem } from './components/CardItem';
@@ -200,6 +201,7 @@ export default function Home() {
   } = useSyncBoards();
 
   useXP();
+  const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -298,22 +300,11 @@ export default function Home() {
   // ============ AUTENTICACIÓN + ADMIN ============
   useEffect(() => {
     const supabase = createClient();
-    const { setAdmin } = useProfile.getState();
+    const { setAdmin } = useAdmin.getState();
 
     const buildUser = (u: any): UserInfo => {
       const avatarUrl = extractAvatarUrl(u);
       const name = extractName(u);
-
-      console.log('═══ [auth] DIAGNÓSTICO ═══');
-      console.log('email:', u?.email);
-      console.log('name extraído:', name);
-      console.log(
-        'user_metadata:',
-        JSON.stringify(u?.user_metadata ?? {}, null, 2)
-      );
-      console.log('avatarUrl extraído:', avatarUrl);
-      console.log('═══════════════════════════');
-
       return {
         email: u?.email ?? '',
         name,
@@ -350,7 +341,7 @@ export default function Home() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
-    useProfile.getState().setAdmin(null);
+    useAdmin.getState().setAdmin(null);
     window.location.reload();
   };
 
@@ -617,7 +608,14 @@ export default function Home() {
     if (overColumn) {
       const currentCol = cards[cardId]?.columnId;
       if (currentCol === overColumn.id) return;
-      moveCard(cardId, overColumn.id);
+      const ok = moveCard(cardId, overColumn.id);
+      if (!ok) {
+        toast(
+          'La columna destino está llena (límite WIP)',
+          'error',
+          2500
+        );
+      }
       return;
     }
 
@@ -651,7 +649,14 @@ export default function Home() {
       moveCard(cardId, targetCol.id, finalIdx);
     } else {
       const insertAt = insertBefore ? overIndex : overIndex + 1;
-      moveCard(cardId, targetCol.id, insertAt);
+      const ok = moveCard(cardId, targetCol.id, insertAt);
+      if (!ok) {
+        toast(
+          'La columna destino está llena (límite WIP)',
+          'error',
+          2500
+        );
+      }
     }
   };
 

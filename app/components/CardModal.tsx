@@ -237,15 +237,7 @@ export function CardModal({
       });
   }, [boardId]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSave();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
+  // ✅ FIX: ref para evitar stale closure en Ctrl+Enter
   const handleSave = () => {
     if (!title.trim()) return;
     onSave({
@@ -256,6 +248,20 @@ export function CardModal({
     });
     onClose();
   };
+
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSaveRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const handleAddSubtask = () => {
     const t = newSubtask.trim();
