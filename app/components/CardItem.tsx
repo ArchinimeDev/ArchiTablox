@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Card, Label } from '@/types';
-import { RARITY_DOT, RARITY_LABEL } from '@/lib/gamification';
+import { RARITY_DOT, RARITY_LABEL, RARITY_TEXT } from '@/lib/gamification';
 import { hexWithAlpha } from '@/lib/labels';
 
 interface Member {
@@ -107,6 +107,7 @@ export function CardItem({
     .filter((m): m is Member => !!m);
 
   const coverStyle = getCoverStyle(card.cover);
+  const isImageCover = card.cover?.type === 'image';
 
   return (
     <div
@@ -128,21 +129,21 @@ export function CardItem({
         ${isDragging ? 'cursor-grabbing' : ''}
       `}
     >
-      {coverStyle && <div className="h-16 w-full" style={coverStyle} />}
+      {/* Portada: barra delgada de color, o imagen si es tipo image */}
+      {coverStyle && (
+        <div
+          className={isImageCover ? 'h-20 w-full' : 'h-1 w-full'}
+          style={coverStyle}
+        />
+      )}
 
       <div className="p-2.5">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${RARITY_DOT[card.priority]} group-hover:animate-breathe`}
-              title={`Prioridad ${RARITY_LABEL[card.priority]}`}
-            />
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-              {RARITY_LABEL[card.priority]}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-0.5">
+        {/* Título + acciones (las acciones solo en hover en desktop) */}
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className="flex-1 min-w-0 text-sm text-slate-100 leading-snug break-words font-medium">
+            {card.title}
+          </p>
+          <div className="flex items-center gap-0.5 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
@@ -150,7 +151,7 @@ export function CardItem({
                 e.stopPropagation();
                 onOpen(card.id);
               }}
-              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md md:opacity-0 md:group-hover:opacity-100"
+              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md"
               title="Editar"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,7 +165,7 @@ export function CardItem({
                 e.stopPropagation();
                 onArchive(card.id);
               }}
-              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md md:opacity-0 md:group-hover:opacity-100"
+              className="interactive text-slate-500 hover:text-slate-200 p-1 rounded-md"
               title="Archivar"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,8 +177,9 @@ export function CardItem({
           </div>
         </div>
 
+        {/* Etiquetas */}
         {cardLabels.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-1.5">
+          <div className="flex flex-wrap gap-1 mb-1.5 mt-1">
             {cardLabels.map((label) => (
               <span
                 key={label.id}
@@ -194,117 +196,125 @@ export function CardItem({
           </div>
         )}
 
-        <p className="text-sm text-slate-100 leading-snug break-words">
-          {card.title}
-        </p>
-
+        {/* Descripción */}
         {card.description && (
           <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
             {card.description}
           </p>
         )}
 
-        {(hasSubtasks ||
-          dueLabel ||
-          commentCount > 0 ||
-          attachmentCount > 0 ||
-          assignees.length > 0) && (
-          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/70">
-            <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
-              {hasSubtasks && (
-                <div className="flex items-center gap-1">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 11 12 14 22 4" />
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                  </svg>
-                  <span className="font-mono">
-                    {doneSubtasks}/{subtasks.length}
-                  </span>
-                </div>
-              )}
-
-              {commentCount > 0 && (
-                <div
-                  className="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 px-1.5 py-0.5 rounded-md font-semibold"
-                  title={`${commentCount} comentario${commentCount === 1 ? '' : 's'}`}
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <span className="font-mono text-[10px] leading-none">
-                    {commentCount}
-                  </span>
-                </div>
-              )}
-
-              {attachmentCount > 0 && (
-                <div
-                  className="flex items-center gap-1 bg-blue-500/15 border border-blue-500/40 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold"
-                  title={`${attachmentCount} adjunto${attachmentCount === 1 ? '' : 's'}`}
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                  </svg>
-                  <span className="font-mono text-[10px] leading-none">
-                    {attachmentCount}
-                  </span>
-                </div>
-              )}
-
-              {assignees.length > 0 && (
-                <div
-                  className="flex -space-x-1"
-                  title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}
-                >
-                  {assignees.slice(0, 3).map((m) => {
-                    const displayName = m.full_name || m.email.split('@')[0];
-                    return (
-                      <div
-                        key={m.user_id}
-                        className="w-4 h-4 rounded-full overflow-hidden ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10 shrink-0"
-                        title={m.full_name ? `${m.full_name} · ${m.email}` : m.email}
-                      >
-                        {m.avatar_url ? (
-                          <img
-                            src={m.avatar_url}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div
-                            className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white`}
-                          >
-                            {displayName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {assignees.length > 3 && (
-                    <div className="w-4 h-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-2 ring-slate-900">
-                      +{assignees.length - 3}
-                    </div>
-                  )}
-                </div>
-              )}
+        {/* Footer: prioridad + metadatos + fecha */}
+        <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/70">
+          <div className="flex items-center gap-2 text-[10px] flex-wrap min-w-0">
+            {/* Prioridad (siempre visible) */}
+            <div
+              className="flex items-center gap-1"
+              title={`Prioridad ${RARITY_LABEL[card.priority]}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${RARITY_DOT[card.priority]}`} />
+              <span className={`uppercase tracking-wider font-semibold ${RARITY_TEXT[card.priority]}`}>
+                {RARITY_LABEL[card.priority]}
+              </span>
             </div>
 
-            {dueLabel && (
-              <span
-                className={`text-[10px] flex items-center gap-1 font-medium shrink-0 ${
-                  isOverdue ? 'text-red-400' : 'text-slate-500'
-                }`}
-              >
+            {/* Subtareas */}
+            {hasSubtasks && (
+              <div className="flex items-center gap-1 text-slate-500">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
-                {dueLabel}
-              </span>
+                <span className="font-mono">
+                  {doneSubtasks}/{subtasks.length}
+                </span>
+              </div>
+            )}
+
+            {/* Comentarios */}
+            {commentCount > 0 && (
+              <div
+                className="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 px-1.5 py-0.5 rounded-md font-semibold"
+                title={`${commentCount} comentario${commentCount === 1 ? '' : 's'}`}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span className="font-mono text-[10px] leading-none">
+                  {commentCount}
+                </span>
+              </div>
+            )}
+
+            {/* Adjuntos */}
+            {attachmentCount > 0 && (
+              <div
+                className="flex items-center gap-1 bg-blue-500/15 border border-blue-500/40 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold"
+                title={`${attachmentCount} adjunto${attachmentCount === 1 ? '' : 's'}`}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span className="font-mono text-[10px] leading-none">
+                  {attachmentCount}
+                </span>
+              </div>
+            )}
+
+            {/* Asignados */}
+            {assignees.length > 0 && (
+              <div
+                className="flex -space-x-1"
+                title={`${assignees.length} asignado${assignees.length === 1 ? '' : 's'}`}
+              >
+                {assignees.slice(0, 3).map((m) => {
+                  const displayName = m.full_name || m.email.split('@')[0];
+                  return (
+                    <div
+                      key={m.user_id}
+                      className="w-4 h-4 rounded-full overflow-hidden ring-2 ring-slate-900 transition-transform hover:scale-110 hover:z-10 shrink-0"
+                      title={m.full_name ? `${m.full_name} · ${m.email}` : m.email}
+                    >
+                      {m.avatar_url ? (
+                        <img
+                          src={m.avatar_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div
+                          className={`w-full h-full ${getAvatarColor(m.email)} flex items-center justify-center text-[8px] font-bold text-white`}
+                        >
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {assignees.length > 3 && (
+                  <div className="w-4 h-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-2 ring-slate-900">
+                    +{assignees.length - 3}
+                  </div>
+                )}
+              </div>
             )}
           </div>
-        )}
+
+          {/* Fecha límite */}
+          {dueLabel && (
+            <span
+              className={`text-[10px] flex items-center gap-1 font-medium shrink-0 ${
+                isOverdue ? 'text-red-400' : 'text-slate-500'
+              }`}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              {dueLabel}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

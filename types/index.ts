@@ -58,6 +58,8 @@ export interface Column {
   cardIds: string[];
   wipLimit?: number;
   isDone?: boolean;
+  /** Color de la columna (hex). Si no se especifica, se asigna por posición. */
+  color?: string;
 }
 
 export interface NotificationSettings {

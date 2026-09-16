@@ -5,6 +5,8 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Card, Column, Label } from '@/types';
 import { CardItem } from './CardItem';
+import { useBoard } from '@/store/board';
+import { COLUMN_COLORS } from '@/lib/labels';
 
 interface Member {
   user_id: string;
@@ -47,6 +49,17 @@ export function ColumnView({
 
   const isFull = !!column.wipLimit && column.cardIds.length >= column.wipLimit;
 
+  // Índice de esta columna para asignar color automático por posición
+  const activeColumns = useBoard((s) =>
+    s.boards.find((b) => b.id === s.activeBoardId)?.columns
+  );
+  const columnIndex = activeColumns
+    ? activeColumns.findIndex((c) => c.id === column.id)
+    : 0;
+  const safeIndex = columnIndex < 0 ? 0 : columnIndex;
+  const accentColor =
+    column.color ?? COLUMN_COLORS[safeIndex % COLUMN_COLORS.length];
+
   // Bounce cuando cambia el contador
   useEffect(() => {
     if (prevCount.current !== column.cardIds.length) {
@@ -69,7 +82,6 @@ export function ColumnView({
     onUpdateColumn(column.id, {
       wipLimit: !isNaN(n) && n > 0 ? n : undefined,
     });
-    setShowSettings(false);
   };
 
   return (
@@ -85,33 +97,44 @@ export function ColumnView({
             : 'bg-slate-900/70 border-slate-800'
         }
       `}
+      style={{ borderTop: `3px solid ${accentColor}` }}
     >
       <div className="flex justify-between items-center mb-2 px-0.5 gap-2">
-        {editingTitle ? (
-          <input
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={saveTitle}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveTitle();
-              if (e.key === 'Escape') {
-                setTitleDraft(column.title);
-                setEditingTitle(false);
-              }
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {/* Punto de color de la columna */}
+          <span
+            className="w-2 h-2 rounded-full shrink-0"
+            style={{
+              backgroundColor: accentColor,
+              boxShadow: `0 0 8px ${accentColor}80`,
             }}
-            autoFocus
-            className="flex-1 bg-slate-950 border border-amber-500 rounded px-2 py-0.5 text-sm font-bold focus:outline-none text-slate-100"
           />
-        ) : (
-          <h2
-            className="font-bold text-sm cursor-pointer hover:text-amber-400 transition-colors truncate"
-            onDoubleClick={() => setEditingTitle(true)}
-            title="Doble click para renombrar"
-          >
-            {column.isDone && '🏁 '}
-            {column.title}
-          </h2>
-        )}
+          {editingTitle ? (
+            <input
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveTitle();
+                if (e.key === 'Escape') {
+                  setTitleDraft(column.title);
+                  setEditingTitle(false);
+                }
+              }}
+              autoFocus
+              className="flex-1 bg-slate-950 border border-amber-500 rounded px-2 py-0.5 text-sm font-bold focus:outline-none text-slate-100 min-w-0"
+            />
+          ) : (
+            <h2
+              className="font-bold text-sm cursor-pointer hover:text-amber-400 transition-colors truncate min-w-0"
+              onDoubleClick={() => setEditingTitle(true)}
+              title="Doble click para renombrar"
+            >
+              {column.isDone && '🏁 '}
+              {column.title}
+            </h2>
+          )}
+        </div>
 
         <div className="flex items-center gap-1 shrink-0">
           <span
@@ -134,7 +157,7 @@ export function ColumnView({
               <button
                 onClick={() => setShowSettings((s) => !s)}
                 className="interactive text-slate-500 hover:text-amber-400 transition-colors text-xs"
-                title="Configurar límite WIP"
+                title="Configurar límite WIP y color"
               >
                 ⚙
               </button>
@@ -164,7 +187,7 @@ export function ColumnView({
           <label className="block text-slate-400 mb-1.5">
             Límite WIP (vacío = sin límite)
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-3">
             <input
               type="number"
               min={1}
@@ -179,6 +202,29 @@ export function ColumnView({
             >
               OK
             </button>
+          </div>
+
+          <label className="block text-slate-400 mb-1.5">
+            Color de la columna
+          </label>
+          <div className="flex gap-1.5 flex-wrap">
+            {COLUMN_COLORS.map((c) => {
+              const active = (column.color ?? accentColor) === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onUpdateColumn(column.id, { color: c })}
+                  className={`w-6 h-6 rounded-md transition-transform hover:scale-110 ${
+                    active
+                      ? 'ring-2 ring-white/80 ring-offset-1 ring-offset-slate-950'
+                      : ''
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              );
+            })}
           </div>
         </div>
       )}
