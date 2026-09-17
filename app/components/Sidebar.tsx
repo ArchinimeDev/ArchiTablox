@@ -109,12 +109,61 @@ export function Sidebar({
     }
   };
 
-  // ★ Al pulsar un tablero → solo cambia de board, mantiene la vista actual
+  // ★ Al pulsar un tablero → cambia de board Y muestra el Kanban
   const handleSwitchBoard = (id: string) => {
     sounds.nav();
     onSwitchBoard(id);
+    onSetView('board'); // ← siempre va al Kanban del tablero
     onBoardOpened(id);
   };
+
+  // Botones de "Vistas" (sin Kanban — ya está implícito al pulsar un tablero)
+  const viewsList = [
+    {
+      id: 'calendar' as ViewId,
+      label: 'Calendario',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      ),
+    },
+    {
+      id: 'archive' as ViewId,
+      label: 'Archivados',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="5" rx="1" />
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+        </svg>
+      ),
+      badge: archivedCount,
+    },
+    {
+      id: 'myCards' as ViewId,
+      label: 'Mis tarjetas',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+      badge: myCardsCount,
+    },
+    {
+      id: 'metrics' as ViewId,
+      label: 'Métricas',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="20" x2="21" y2="20" />
+          <rect x="5" y="12" width="3" height="6" />
+          <rect x="10.5" y="8" width="3" height="10" />
+          <rect x="16" y="4" width="3" height="14" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-64 flex-col bg-slate-950 border-r border-slate-800 z-40">
@@ -229,10 +278,7 @@ export function Sidebar({
 
               if (isEditing) {
                 return (
-                  <div
-                    key={b.id}
-                    className="flex items-center gap-1 px-1"
-                  >
+                  <div key={b.id} className="flex items-center gap-1 px-1">
                     <input
                       value={editDraft}
                       onChange={(e) => setEditDraft(e.target.value)}
@@ -363,128 +409,38 @@ export function Sidebar({
             Vistas
           </div>
           <nav className="space-y-0.5">
-            <button
-              data-active={view === 'board'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('board');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'board'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'board' ? 'text-amber-400' : 'text-slate-500'}>
-                <rect x="3" y="3" width="7" height="18" rx="1" />
-                <rect x="14" y="3" width="7" height="18" rx="1" />
-              </svg>
-              <span className="flex-1 text-left">Kanban</span>
-            </button>
-            <button
-              data-active={view === 'calendar'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('calendar');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'calendar'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'calendar' ? 'text-amber-400' : 'text-slate-500'}>
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <span className="flex-1 text-left">Calendario</span>
-            </button>
-            <button
-              data-active={view === 'archive'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('archive');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'archive'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'archive' ? 'text-amber-400' : 'text-slate-500'}>
-                <rect x="2" y="3" width="20" height="5" rx="1" />
-                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-              </svg>
-              <span className="flex-1 text-left">Archivados</span>
-              {archivedCount > 0 && (
-                <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
-                  {archivedCount > 99 ? '99+' : archivedCount}
-                </span>
-              )}
-            </button>
-            <button
-              data-active={view === 'myCards'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('myCards');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'myCards'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={view === 'myCards' ? 'text-amber-400' : 'text-slate-500'}
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <span className="flex-1 text-left">Mis tarjetas</span>
-              {myCardsCount > 0 && (
-                <span className="bg-amber-500/20 text-amber-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
-                  {myCardsCount > 99 ? '99+' : myCardsCount}
-                </span>
-              )}
-            </button>
-            <button
-              data-active={view === 'metrics'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('metrics');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'metrics'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={view === 'metrics' ? 'text-amber-400' : 'text-slate-500'}
-              >
-                <line x1="3" y1="20" x2="21" y2="20" />
-                <rect x="5" y="12" width="3" height="6" />
-                <rect x="10.5" y="8" width="3" height="10" />
-                <rect x="16" y="4" width="3" height="14" />
-              </svg>
-              <span className="flex-1 text-left">Métricas</span>
-            </button>
+            {viewsList.map((item) => {
+              const isActive = view === item.id;
+              return (
+                <button
+                  key={item.id}
+                  data-active={isActive}
+                  onClick={() => {
+                    sounds.nav();
+                    onSetView(item.id);
+                  }}
+                  className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                    isActive
+                      ? 'bg-slate-800 text-slate-100 font-medium'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  <span
+                    className={
+                      isActive ? 'text-amber-400 shrink-0' : 'text-slate-500 shrink-0'
+                    }
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
@@ -526,7 +482,7 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer — acciones globales */}
+      {/* Footer */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
           onClick={() => {

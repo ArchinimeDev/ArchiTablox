@@ -263,7 +263,6 @@ export default function Home() {
   }, []);
 
   // ★ Solo redirigir 'search' fuera de móvil.
-  //   'archive' ahora es una vista completa también en desktop.
   useEffect(() => {
     if (!isMobile && view === 'search') {
       setView('board');
@@ -1092,7 +1091,6 @@ export default function Home() {
             />
           )}
 
-          {/* ★ Archivados como vista completa (no modal) */}
           {view === 'archive' && (
             <MobileArchiveView
               archivedCards={archivedCards}
@@ -1195,7 +1193,7 @@ export default function Home() {
                       onClick={() => {
                         switchBoard(b.id);
                         handleBoardOpened(b.id);
-                        // ★ Mantiene la vista actual al cambiar de tablero
+                        setView('board');
                         setShowMobileMenu(false);
                       }}
                       className={`interactive w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm ${
