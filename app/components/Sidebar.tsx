@@ -31,9 +31,8 @@ interface Props {
   onDeleteBoard: (id: string) => void;
   onRenameBoard: (id: string, name: string) => void;
   onOpenShare: () => void;
-  onOpenArchive: () => void;
-  onOpenCommand: () => void;
   onOpenShortcuts: () => void;
+  onOpenCommand: () => void;
   onLogout: () => void;
   onBoardOpened: (id: string) => void;
 }
@@ -53,9 +52,8 @@ export function Sidebar({
   onDeleteBoard,
   onRenameBoard,
   onOpenShare,
-  onOpenArchive,
-  onOpenCommand,
   onOpenShortcuts,
+  onOpenCommand,
   onLogout,
   onBoardOpened,
 }: Props) {
@@ -109,6 +107,14 @@ export function Sidebar({
       sounds.close();
       onDeleteBoard(b.id);
     }
+  };
+
+  // ★ Al pulsar un tablero → forzar vista "board"
+  const handleSwitchBoard = (id: string) => {
+    sounds.nav();
+    onSwitchBoard(id);
+    onSetView('board'); // ← CAMBIO CLAVE
+    onBoardOpened(id);
   };
 
   return (
@@ -215,7 +221,7 @@ export function Sidebar({
 
           <nav className="space-y-0.5">
             {boards.map((b) => {
-              const isActive = b.id === activeBoardId;
+              const isActive = b.id === activeBoardId && view === 'board';
               const isNew = newBoardIds.includes(b.id);
               const role = boardRoles[b.id];
               const isOwner = role === 'owner' || !role;
@@ -262,11 +268,7 @@ export function Sidebar({
                   }`}
                 >
                   <button
-                    onClick={() => {
-                      sounds.nav();
-                      onSwitchBoard(b.id);
-                      onBoardOpened(b.id);
-                    }}
+                    onClick={() => handleSwitchBoard(b.id)}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       if (isOwner) startRename(b);
@@ -363,6 +365,24 @@ export function Sidebar({
           </div>
           <nav className="space-y-0.5">
             <button
+              data-active={view === 'board'}
+              onClick={() => {
+                sounds.nav();
+                onSetView('board');
+              }}
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                view === 'board'
+                  ? 'bg-slate-800 text-slate-100 font-medium'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'board' ? 'text-amber-400' : 'text-slate-500'}>
+                <rect x="3" y="3" width="7" height="18" rx="1" />
+                <rect x="14" y="3" width="7" height="18" rx="1" />
+              </svg>
+              <span className="flex-1 text-left">Kanban</span>
+            </button>
+            <button
               data-active={view === 'calendar'}
               onClick={() => {
                 sounds.nav();
@@ -379,6 +399,29 @@ export function Sidebar({
                 <path d="M16 2v4M8 2v4M3 10h18" />
               </svg>
               <span className="flex-1 text-left">Calendario</span>
+            </button>
+            <button
+              data-active={view === 'archive'}
+              onClick={() => {
+                sounds.nav();
+                onSetView('archive');
+              }}
+              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                view === 'archive'
+                  ? 'bg-slate-800 text-slate-100 font-medium'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'archive' ? 'text-amber-400' : 'text-slate-500'}>
+                <rect x="2" y="3" width="20" height="5" rx="1" />
+                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+              </svg>
+              <span className="flex-1 text-left">Archivados</span>
+              {archivedCount > 0 && (
+                <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
+                  {archivedCount > 99 ? '99+' : archivedCount}
+                </span>
+              )}
             </button>
             <button
               data-active={view === 'myCards'}
@@ -484,28 +527,8 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer — acciones y modales */}
+      {/* Footer — solo acciones globales */}
       <div className="border-t border-slate-800 p-2 shrink-0">
-        <button
-          onClick={() => {
-            sounds.open();
-            onOpenArchive();
-          }}
-          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
-          title="Abre un modal con las tarjetas archivadas"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-            <rect x="2" y="3" width="20" height="5" rx="1" />
-            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-          </svg>
-          <span className="flex-1 text-left">Archivados</span>
-          {archivedCount > 0 && (
-            <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
-              {archivedCount > 99 ? '99+' : archivedCount}
-            </span>
-          )}
-        </button>
-
         <button
           onClick={() => {
             sounds.open();

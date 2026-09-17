@@ -262,8 +262,10 @@ export default function Home() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // ★ FIX: solo redirigir 'search' fuera de móvil.
+  //   'archive' ahora es una vista completa también en desktop.
   useEffect(() => {
-    if (!isMobile && (view === 'search' || view === 'archive')) {
+    if (!isMobile && view === 'search') {
       setView('board');
     }
   }, [isMobile, view]);
@@ -790,9 +792,8 @@ export default function Home() {
         onDeleteBoard={deleteBoard}
         onRenameBoard={renameBoard}
         onOpenShare={() => setShowShare(true)}
-        onOpenArchive={() => setShowArchive(true)}
-        onOpenCommand={() => setShowCommand(true)}
         onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenCommand={() => setShowCommand(true)}
         onLogout={handleLogout}
         onBoardOpened={handleBoardOpened}
       />
@@ -1091,16 +1092,7 @@ export default function Home() {
             />
           )}
 
-          {view === 'search' && (
-            <MobileSearchView
-              search={search}
-              onSearchChange={setSearch}
-              cards={mobileSearchResults}
-              labels={labels}
-              onOpenCard={(id) => setEditingId(id)}
-            />
-          )}
-
+          {/* ★ Archivados ahora es una vista completa (no modal) */}
           {view === 'archive' && (
             <MobileArchiveView
               archivedCards={archivedCards}
@@ -1110,6 +1102,16 @@ export default function Home() {
               onRestore={restoreCard}
               onDelete={deleteCard}
               onEmpty={emptyArchive}
+            />
+          )}
+
+          {view === 'search' && (
+            <MobileSearchView
+              search={search}
+              onSearchChange={setSearch}
+              cards={mobileSearchResults}
+              labels={labels}
+              onOpenCard={(id) => setEditingId(id)}
             />
           )}
 
@@ -1185,7 +1187,7 @@ export default function Home() {
                   Mis tableros
                 </div>
                 {boards.map((b) => {
-                  const isActive = b.id === activeBoardId;
+                  const isActive = b.id === activeBoardId && view === 'board';
                   const isNew = newBoardIds.includes(b.id);
                   return (
                     <button
@@ -1193,6 +1195,7 @@ export default function Home() {
                       onClick={() => {
                         switchBoard(b.id);
                         handleBoardOpened(b.id);
+                        setView('board');
                         setShowMobileMenu(false);
                       }}
                       className={`interactive w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm ${
@@ -1372,6 +1375,8 @@ export default function Home() {
         />
       )}
 
+      {/* ★ Mantenemos el modal pero solo se abre si por algo quedó abierto. 
+          Ya no se activa desde el sidebar. */}
       {showArchive && (
         <ArchiveModal
           archivedCards={archivedCards}
