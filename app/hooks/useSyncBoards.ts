@@ -1,3 +1,4 @@
+// hooks/useSyncBoards.ts
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -64,11 +65,11 @@ function boardToUpdateRow(board: Board) {
 }
 
 /**
- * ★ NUEVO: elige el mejor board para activar.
+ * Elige el mejor board para activar.
  * Prioridad:
  *   1. Si el actual sigue existiendo → mantenerlo
- *   2. Si no, el que tiene MÁS MIEMBROS (compartidos primero)
- *   3. Si empatan, el primero
+ *   2. Si no, el primero compartido (role !== 'owner')
+ *   3. Si no, el primero
  */
 function pickActiveBoard(
   cloudBoards: Board[],
@@ -77,13 +78,10 @@ function pickActiveBoard(
 ): string {
   if (cloudBoards.length === 0) return '';
 
-  // 1. Mantener el actual si sigue existiendo
   if (cloudBoards.some((b) => b.id === currentActiveId)) {
     return currentActiveId;
   }
 
-  // 2. Contar miembros por board (usando roles como proxy)
-  // Los boards compartidos tienen entrada en boardRoles con role !== 'owner'
   const shared = cloudBoards.filter((b) => {
     const role = boardRoles[b.id];
     return role && role !== 'owner';
@@ -91,7 +89,6 @@ function pickActiveBoard(
 
   if (shared.length > 0) return shared[0].id;
 
-  // 3. Fallback: el primero
   return cloudBoards[0].id;
 }
 
@@ -105,12 +102,15 @@ export function useSyncBoards(): UseSyncBoardsReturn {
   const [boardRoles, setBoardRoles] = useState<Record<string, string>>({});
 
   const hasLoadedRef = useRef(false);
-  const isApplyingRemoteRef = useRef(false);
   const editableBoardIdsRef = useRef<Set<string>>(new Set());
   const lastLocalWriteRef = useRef<number>(0);
   const locallyCreatedIdsRef = useRef<Set<string>>(new Set());
-  // ★ Ref para acceder a boardRoles desde callbacks sin stale closure
   const boardRolesRef = useRef<Record<string, string>>({});
+
+  // ★ Referencia exacta del array que aplicamos desde el cloud.
+  //   Si `boards === lastAppliedRemoteRef.current`, no hay cambios locales
+  //   pendientes → el effect de guardado puede saltarse.
+  const lastAppliedRemoteRef = useRef<Board[] | null>(null);
 
   useEffect(() => {
     boardRolesRef.current = boardRoles;
@@ -132,6 +132,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           hasLoadedRef.current = false;
           editableBoardIdsRef.current = new Set();
           locallyCreatedIdsRef.current = new Set();
+          lastAppliedRemoteRef.current = null;
           setBoardRoles({});
           boardRolesRef.current = {};
           setStatus('idle');
@@ -179,8 +180,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         setStatus('error');
         return;
       }
-
-      isApplyingRemoteRef.current = true;
 
       if (data.length === 0) {
         // Cloud vacío → crear tablero fresco
@@ -233,26 +232,25 @@ export function useSyncBoards(): UseSyncBoardsReturn {
             rolesMap
           );
           setBoards(cloudBoards, activeId);
+          // ★ Marcar como "ya sincronizado" para que el save effect no
+          //   guarde inmediatamente lo que acabamos de leer.
+          lastAppliedRemoteRef.current = cloudBoards;
         }
       } else {
         const cloudBoards = rowsToBoards(data);
         const currentActiveId = useBoard.getState().activeBoardId;
-        // ★ AQUÍ EL FIX: elegir el mejor board
         const activeId = pickActiveBoard(
           cloudBoards,
           currentActiveId,
           rolesMap
         );
         setBoards(cloudBoards, activeId);
+        lastAppliedRemoteRef.current = cloudBoards; // ★
       }
 
       hasLoadedRef.current = true;
       setLastSyncAt(Date.now());
       setStatus('synced');
-
-      setTimeout(() => {
-        isApplyingRemoteRef.current = false;
-      }, 500);
     };
 
     load();
@@ -277,7 +275,10 @@ export function useSyncBoards(): UseSyncBoardsReturn {
   useEffect(() => {
     if (!userId) return;
     if (!hasLoadedRef.current) return;
-    if (isApplyingRemoteRef.current) return;
+
+    // ★ Si el array actual es EL MISMO que aplicamos desde el cloud,
+    //   no hay cambios locales → nada que guardar.
+    if (boards === lastAppliedRemoteRef.current) return;
 
     const timeout = setTimeout(async () => {
       setStatus('saving');
@@ -329,6 +330,9 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           return;
         }
       }
+
+      // ★ Marcar el array actual como "ya guardado"
+      lastAppliedRemoteRef.current = boards;
 
       const { data: memberships } = await supabase
         .from('board_members')
@@ -390,8 +394,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       setBoardRoles(rolesMap);
       boardRolesRef.current = rolesMap;
 
-      isApplyingRemoteRef.current = true;
-
       const cloudBoards = rowsToBoards(data);
       if (cloudBoards.length > 0) {
         const currentActiveId = useBoard.getState().activeBoardId;
@@ -401,28 +403,38 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           rolesMap
         );
         setBoards(cloudBoards, activeId);
+        lastAppliedRemoteRef.current = cloudBoards; // ★
       }
 
       setLastSyncAt(Date.now());
       setStatus('synced');
-
-      setTimeout(() => {
-        isApplyingRemoteRef.current = false;
-      }, 500);
     };
 
     const channel = supabase
       .channel(`boards-${userId}`)
+      // ★ SIN filtro user_id: así llegan también los cambios de boards
+      //   donde eres editor/viewer (RLS filtra en el server)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'boards',
+        },
+        () => {
+          reloadFromCloud();
+        }
+      )
+      // ★ NUEVO: reaccionar cuando te añaden/quitan de un board
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'board_members',
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          if (isApplyingRemoteRef.current) return;
           reloadFromCloud();
         }
       )
@@ -464,7 +476,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
 
     if (!data) return;
 
-    isApplyingRemoteRef.current = true;
     const cloudBoards = rowsToBoards(data);
     if (cloudBoards.length > 0) {
       const currentActiveId = useBoard.getState().activeBoardId;
@@ -474,13 +485,10 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         rolesMap
       );
       setBoards(cloudBoards, activeId);
+      lastAppliedRemoteRef.current = cloudBoards; // ★
     }
     setLastSyncAt(Date.now());
     setStatus('synced');
-
-    setTimeout(() => {
-      isApplyingRemoteRef.current = false;
-    }, 500);
   }, [userId, setBoards]);
 
   return { status, userId, lastSyncAt, reload, boardRoles };

@@ -1,3 +1,4 @@
+// app/page.tsx
 'use client';
 
 import {
@@ -236,6 +237,10 @@ export default function Home() {
     cardId: string;
     boardId: string;
   } | null>(null);
+
+  // ★ MOVER AQUÍ ARRIBA: así todos los handlers pueden usar `editingCard`
+  //   sin riesgo de TDZ (Temporal Dead Zone).
+  const editingCard = editingId ? cards[editingId] : null;
 
   const newCardInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -750,7 +755,7 @@ export default function Home() {
     );
   }
 
-  const editingCard = editingId ? cards[editingId] : null;
+  // ★ Nota: `editingCard` ya está declarado arriba (línea ~150)
   const hasActiveFilters =
     !!search || filterPriority !== 'all' || filterLabel !== 'all';
 

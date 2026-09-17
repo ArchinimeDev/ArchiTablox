@@ -1,3 +1,5 @@
+// lib/labels.ts
+
 // Colores disponibles para etiquetas
 export const LABEL_COLORS = [
   '#ef4444', // rojo
@@ -13,9 +15,6 @@ export const LABEL_COLORS = [
 
 // ============================================================
 // COLORES DE COLUMNA (para el Kanban)
-// Se asignan automáticamente por posición si la columna no tiene
-// un color propio. El usuario puede cambiarlos con el selector
-// de color en la configuración de la columna (⚙).
 // ============================================================
 
 export const COLUMN_COLORS = [
@@ -29,10 +28,30 @@ export const COLUMN_COLORS = [
   '#84cc16', // lima
 ];
 
-// Devuelve un color hex con alpha (00-ff)
-export function hexWithAlpha(hex: string, alpha: number) {
-  const a = Math.round(alpha * 255)
+/**
+ * Devuelve un color hex con alpha (00-ff).
+ * Acepta `#abc`, `abc`, `#aabbcc` y `aabbcc`.
+ * Si el input no es un hex válido, devuelve el original sin alpha.
+ */
+export function hexWithAlpha(hex: string, alpha: number): string {
+  let h = (hex ?? '').trim();
+
+  // Añadir # si falta
+  if (h && !h.startsWith('#')) h = '#' + h;
+
+  // Expandir shorthand #abc → #aabbcc
+  if (h.length === 4) {
+    h = '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+  }
+
+  // Si no es un hex de 6 dígitos, devolvemos el original
+  if (h.length !== 7) return hex;
+
+  // Clamp alpha
+  const clamped = Math.max(0, Math.min(1, alpha));
+  const a = Math.round(clamped * 255)
     .toString(16)
     .padStart(2, '0');
-  return hex + a;
+
+  return h + a;
 }

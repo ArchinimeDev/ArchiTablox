@@ -286,7 +286,8 @@ function withActiveBoard(
 
 export const useBoard = create<Store>()(
   persist(
-    (set) => ({
+    // ★ AÑADIDO get para usar en moveCard
+    (set, get) => ({
       boards: [firstBoard],
       activeBoardId: firstBoard.id,
 
@@ -457,8 +458,40 @@ export const useBoard = create<Store>()(
           })
         ),
 
+      // ★ REFACTOR: pre-check fuera del set para evitar side-effects frágiles
       moveCard: (cardId, toColumnId, toIndex) => {
-        let blocked = false;
+        const state = get();
+        const board = state.boards.find((b) => b.id === state.activeBoardId);
+        if (!board) return false;
+
+        const card = board.cards[cardId];
+        if (!card || card.archived) return false;
+
+        const sourceCol = board.columns.find((c) => c.id === card.columnId);
+        const targetCol = board.columns.find((c) => c.id === toColumnId);
+        if (!sourceCol || !targetCol) return false;
+
+        const isSame = sourceCol.id === targetCol.id;
+
+        // No-op: mismo sitio
+        if (
+          isSame &&
+          (toIndex === undefined ||
+            toIndex === sourceCol.cardIds.indexOf(cardId))
+        ) {
+          return true;
+        }
+
+        // WIP limit en la columna destino
+        if (
+          !isSame &&
+          targetCol.wipLimit &&
+          targetCol.cardIds.length >= targetCol.wipLimit
+        ) {
+          return false;
+        }
+
+        // Aplicar el cambio
         set((state) =>
           withActiveBoard(state, (board) => {
             const card = board.cards[cardId];
@@ -471,22 +504,6 @@ export const useBoard = create<Store>()(
             if (!sourceCol || !targetCol) return board;
 
             const isSame = sourceCol.id === targetCol.id;
-            if (
-              isSame &&
-              (toIndex === undefined ||
-                toIndex === sourceCol.cardIds.indexOf(cardId))
-            ) {
-              return board;
-            }
-
-            if (
-              !isSame &&
-              targetCol.wipLimit &&
-              targetCol.cardIds.length >= targetCol.wipLimit
-            ) {
-              blocked = true;
-              return board;
-            }
 
             let newSourceIds: string[];
             let newTargetIds: string[];
@@ -569,7 +586,8 @@ export const useBoard = create<Store>()(
             };
           })
         );
-        return !blocked;
+
+        return true;
       },
 
       addSubtask: (cardId, title) =>
@@ -1119,7 +1137,6 @@ export const useBoard = create<Store>()(
     {
       name: 'kanban-quest-storage',
       version: 22,
-      // ★ FIX: especificar storage explícito (necesario en Next.js con SSR)
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted: any, version) => {
         if (version < 10 && persisted?.columns) {

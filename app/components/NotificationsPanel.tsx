@@ -1,3 +1,4 @@
+// components/NotificationsPanel.tsx
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -29,8 +30,6 @@ interface PendingInvite {
   invite_created_at: string;
 }
 
-const notifiedThisSession = new Set<string>();
-
 const ROLE_LABEL: Record<string, string> = {
   owner: 'Propietario',
   editor: 'Editor',
@@ -49,6 +48,9 @@ export function NotificationsPanel({
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [processingInvite, setProcessingInvite] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  // ★ Ref local: se resetea al desmontar (logout) y al cambiar de board
+  const notifiedRef = useRef<Set<string>>(new Set());
 
   const settings = board.notificationSettings ?? DEFAULT_NOTIFICATION_SETTINGS;
 
@@ -75,9 +77,12 @@ export function NotificationsPanel({
     if (data) setInvites(data as PendingInvite[]);
   };
 
-  // ★ SIMPLIFICADO: solo cargar cuando el panel se abre.
-  // (El polling de 30s se elimina; WelcomeInvitesBanner y Realtime se
-  // encargan del resto.)
+  // ★ Limpiar notificaciones "ya vistas" cuando cambia el board
+  useEffect(() => {
+    notifiedRef.current.clear();
+  }, [board.id]);
+
+  // Solo cargar cuando el panel se abre
   useEffect(() => {
     if (open) loadInvites();
   }, [open]);
@@ -119,8 +124,9 @@ export function NotificationsPanel({
 
     for (const d of dueCards) {
       const key = `${dayKey(Date.now())}::${d.card.id}`;
-      if (notifiedThisSession.has(key)) continue;
-      notifiedThisSession.add(key);
+      // ★ Usar el ref local en vez del Set module-level
+      if (notifiedRef.current.has(key)) continue;
+      notifiedRef.current.add(key);
 
       const emoji =
         d.status === 'overdue' ? '⚠️' : d.status === 'today' ? '🔔' : '📅';

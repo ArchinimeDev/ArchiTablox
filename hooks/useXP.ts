@@ -1,3 +1,4 @@
+// hooks/useXP.ts
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -21,25 +22,40 @@ const ACTION_MAP: Partial<Record<ActivityType, TrackAction>> = {
 // ★ Clave compartida entre pestañas para evitar doble conteo
 const LAST_SEEN_KEY = 'architablox-last-seen-activity';
 
+// ★ Solo premiamos actividades creadas recientemente. Las que vienen del
+//   cloud, de un import o de un merge tienen timestamps viejos → se ignoran.
+const RECENT_WINDOW_MS = 15_000;
+
+// ★ Margen de espera tras el mount antes de empezar a premiar.
+//   Da tiempo a que useSyncBoards termine de aplicar los datos del cloud.
+const READY_DELAY_MS = 2000;
+
 export function useXP() {
   const addXP = useProfile((s) => s.addXP);
   const trackAction = useStats((s) => s.trackAction);
   const recomputeStreak = useStats((s) => s.recomputeStreak);
   const { toast } = useToast();
   const lastSeenId = useRef<string | null>(null);
+  const readyRef = useRef(false);
 
   useEffect(() => {
     recomputeStreak();
   }, [recomputeStreak]);
 
-  // Inicializa desde localStorage
+  // Inicializa desde localStorage + delay para "ready"
   useEffect(() => {
     try {
       lastSeenId.current = localStorage.getItem(LAST_SEEN_KEY);
     } catch {}
+
+    const t = setTimeout(() => {
+      readyRef.current = true;
+    }, READY_DELAY_MS);
+
+    return () => clearTimeout(t);
   }, []);
 
-  // ★ Sincroniza entre pestañas
+  // Sincroniza entre pestañas
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === LAST_SEEN_KEY && e.newValue) {
@@ -57,10 +73,17 @@ export function useXP() {
       if (!latest) return;
       if (latest.id === lastSeenId.current) return;
 
+      // ★ Siempre recordar el último ID visto (para no reprocesar)
       lastSeenId.current = latest.id;
       try {
         localStorage.setItem(LAST_SEEN_KEY, latest.id);
       } catch {}
+
+      // ★ Skip si todavía no está listo (carga inicial del cloud)
+      if (!readyRef.current) return;
+
+      // ★ Skip si la actividad es vieja (viene del cloud, no es nueva)
+      if (Date.now() - latest.timestamp > RECENT_WINDOW_MS) return;
 
       const action = ACTION_MAP[latest.type];
       if (!action) return;
