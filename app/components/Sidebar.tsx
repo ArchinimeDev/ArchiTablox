@@ -109,11 +109,10 @@ export function Sidebar({
     }
   };
 
-  // ★ Al pulsar un tablero → forzar vista "board"
+  // ★ Al pulsar un tablero → solo cambia de board, mantiene la vista actual
   const handleSwitchBoard = (id: string) => {
     sounds.nav();
     onSwitchBoard(id);
-    onSetView('board'); // ← CAMBIO CLAVE
     onBoardOpened(id);
   };
 
@@ -527,7 +526,7 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer — solo acciones globales */}
+      {/* Footer — acciones globales */}
       <div className="border-t border-slate-800 p-2 shrink-0">
         <button
           onClick={() => {
