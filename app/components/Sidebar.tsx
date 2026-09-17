@@ -28,8 +28,8 @@ interface Props {
   onSwitchBoard: (id: string) => void;
   onSetView: (v: ViewId) => void;
   onCreateBoard: (name: string) => void;
-  onDeleteBoard: (id: string) => void;  // ★ NUEVO
-  onRenameBoard: (id: string, name: string) => void;  // ★ NUEVO
+  onDeleteBoard: (id: string) => void;
+  onRenameBoard: (id: string, name: string) => void;
   onOpenShare: () => void;
   onOpenArchive: () => void;
   onOpenCommand: () => void;
@@ -71,6 +71,12 @@ export function Sidebar({
     onCreateBoard(t);
     setNewName('');
     setCreating(false);
+  };
+
+  const cancelCreate = () => {
+    sounds.cancel();
+    setCreating(false);
+    setNewName('');
   };
 
   const startRename = (b: Board) => {
@@ -136,46 +142,74 @@ export function Sidebar({
 
         {/* TABLEROS */}
         <div className="mb-3">
-          <div className="flex items-center justify-between px-2 mb-1">
+          <div className="flex items-center justify-between px-2 mb-2">
             <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
               Mis tableros
             </span>
-            <button
-              onClick={() => {
-                sounds.click();
-                setCreating(true);
-              }}
-              className="interactive text-slate-500 hover:text-amber-400 p-0.5 rounded"
-              title="Nuevo tablero"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
+            {!creating && (
+              <button
+                onClick={() => {
+                  sounds.click();
+                  setCreating(true);
+                }}
+                className="interactive flex items-center gap-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-500 text-gray-950 font-bold rounded-md px-2 py-1 text-[10px] shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition-all"
+                title="Nuevo tablero"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Nuevo</span>
+              </button>
+            )}
           </div>
 
           {creating && (
-            <div className="px-1 mb-1.5 flex gap-1 animate-fade-slide-up">
+            <div className="mx-1 mb-2 bg-slate-900 border-2 border-amber-500/60 rounded-lg p-2 animate-fade-slide-up shadow-lg shadow-amber-500/10">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-4 h-4 rounded bg-amber-500 flex items-center justify-center shrink-0">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-gray-950">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">
+                  Nuevo tablero
+                </span>
+              </div>
+
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') commitCreate();
-                  if (e.key === 'Escape') {
-                    setCreating(false);
-                    setNewName('');
-                  }
+                  if (e.key === 'Escape') cancelCreate();
                 }}
-                placeholder="Nombre..."
+                placeholder="Nombre del tablero..."
                 autoFocus
-                className="flex-1 bg-slate-900 border border-amber-500/60 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500/80 placeholder:text-slate-600 mb-2"
               />
-              <button
-                onClick={commitCreate}
-                className="interactive bg-amber-500 hover:bg-amber-400 text-gray-950 font-medium rounded px-2 text-xs"
-              >
-                ✓
-              </button>
+
+              <div className="flex gap-1.5">
+                <button
+                  onClick={commitCreate}
+                  disabled={!newName.trim()}
+                  className="interactive flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-gray-950 font-bold rounded px-2 py-1 text-[11px] flex items-center justify-center gap-1"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  Crear
+                </button>
+                <button
+                  onClick={cancelCreate}
+                  className="interactive flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded px-2 py-1 text-[11px] flex items-center justify-center gap-1"
+                  title="Cancelar (Esc)"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                  Cancelar
+                </button>
+              </div>
             </div>
           )}
 
@@ -184,7 +218,7 @@ export function Sidebar({
               const isActive = b.id === activeBoardId;
               const isNew = newBoardIds.includes(b.id);
               const role = boardRoles[b.id];
-              const isOwner = role === 'owner' || !role; // ★ sin role = owner local
+              const isOwner = role === 'owner' || !role;
               const isEditing = editingId === b.id;
               const canDelete = isOwner && boards.length > 1;
 
@@ -275,10 +309,8 @@ export function Sidebar({
                     </svg>
                   )}
 
-                  {/* ★ BOTONES: solo visibles en hover, solo owner */}
                   {isOwner && (
                     <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-auto">
-                      {/* Renombrar */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -291,7 +323,6 @@ export function Sidebar({
                           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                         </svg>
                       </button>
-                      {/* Eliminar */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
