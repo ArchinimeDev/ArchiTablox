@@ -1,3 +1,4 @@
+// app/components/ShareModal.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -77,9 +78,17 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
   } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const isOwner = members.some(
-    (m) => m.user_id === currentUserId && m.role === 'owner'
-  );
+  // ★ FIX: Fallback. Si el board aún no tiene fila en board_members
+  //   (boards creados antes del trigger), asumimos que el usuario actual
+  //   es owner. La RPC create_board_invite valida el rol en el servidor,
+  //   así que no es un riesgo de seguridad — un viewer que intente invitar
+  //   será rechazado igualmente por el backend.
+  const isOwner =
+    members.length === 0
+      ? true
+      : members.some(
+          (m) => m.user_id === currentUserId && m.role === 'owner'
+        );
 
   const reload = async () => {
     const supabase = createClient();
@@ -201,7 +210,12 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
   };
 
   const handleRemoveMember = async (member: Member) => {
-    if (!window.confirm(`¿Quitar a ${member.full_name || member.email} del tablero?`)) return;
+    if (
+      !window.confirm(
+        `¿Quitar a ${member.full_name || member.email} del tablero?`
+      )
+    )
+      return;
     const supabase = createClient();
     const { data, error } = await supabase.rpc('remove_board_member', {
       p_member_id: member.id,
@@ -351,7 +365,11 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                   <div className="flex gap-1.5">
                     <input
                       readOnly
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${newInviteToken.token}`}
+                      value={`${
+                        typeof window !== 'undefined'
+                          ? window.location.origin
+                          : ''
+                      }/join/${newInviteToken.token}`}
                       onFocus={(e) => e.target.select()}
                       className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-[11px] text-slate-400 font-mono focus:outline-none truncate"
                     />
@@ -388,6 +406,10 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
 
             {loading ? (
               <p className="text-xs text-slate-500 italic">Cargando...</p>
+            ) : members.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">
+                Sin miembros registrados todavía.
+              </p>
             ) : (
               <div className="space-y-1.5">
                 {members.map((m) => {
@@ -507,7 +529,11 @@ export function ShareModal({ board, currentUserId, onClose }: Props) {
                         <div className="flex gap-1.5 mt-2">
                           <input
                             readOnly
-                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${invToken.token}`}
+                            value={`${
+                              typeof window !== 'undefined'
+                                ? window.location.origin
+                                : ''
+                            }/join/${invToken.token}`}
                             onFocus={(e) => e.target.select()}
                             className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-500 font-mono focus:outline-none truncate"
                           />
