@@ -48,9 +48,6 @@ function boardToInsertRow(board: Board, userId: string) {
   };
 }
 
-// ★ FIX: incluir user_id también en el UPDATE.
-//   Sin esto, el UPSERT (INSERT ... ON CONFLICT DO UPDATE) intenta
-//   insertar con user_id=NULL → viola el NOT NULL constraint.
 function boardToUpdateRow(board: Board, userId: string) {
   return {
     id: board.id,
@@ -70,10 +67,6 @@ function boardToUpdateRow(board: Board, userId: string) {
 
 /**
  * Elige el mejor board para activar.
- * Prioridad:
- *   1. Si el actual sigue existiendo → mantenerlo
- *   2. Si no, el primero compartido (role !== 'owner')
- *   3. Si no, el primero
  */
 function pickActiveBoard(
   cloudBoards: Board[],
@@ -112,9 +105,10 @@ export function useSyncBoards(): UseSyncBoardsReturn {
   const boardRolesRef = useRef<Record<string, string>>({});
 
   // ★ Referencia exacta del array que aplicamos desde el cloud.
-  //   Si `boards === lastAppliedRemoteRef.current`, no hay cambios locales
-  //   pendientes → el effect de guardado puede saltarse.
   const lastAppliedRemoteRef = useRef<Board[] | null>(null);
+
+  // ★ IDs de boards que existían antes y ya no están → borrar en Supabase.
+  const locallyDeletedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     boardRolesRef.current = boardRoles;
@@ -136,6 +130,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           hasLoadedRef.current = false;
           editableBoardIdsRef.current = new Set();
           locallyCreatedIdsRef.current = new Set();
+          locallyDeletedIdsRef.current = new Set();
           lastAppliedRemoteRef.current = null;
           setBoardRoles({});
           boardRolesRef.current = {};
@@ -259,14 +254,28 @@ export function useSyncBoards(): UseSyncBoardsReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // ============ 3. Detectar boards creados por el usuario ============
+  // ============ 3. Detectar boards creados/eliminados por el usuario ============
   useEffect(() => {
     const unsubscribe = useBoard.subscribe((state, prevState) => {
       if (!hasLoadedRef.current) return;
+
       const prevIds = new Set(prevState.boards.map((b) => b.id));
+      const newIds = new Set(state.boards.map((b) => b.id));
+
+      // Boards nuevos → marcar como localmente creados
       for (const b of state.boards) {
         if (!prevIds.has(b.id)) {
           locallyCreatedIdsRef.current.add(b.id);
+        }
+      }
+
+      // ★ Boards que existían y ya no están → marcar como borrados
+      for (const b of prevState.boards) {
+        if (!newIds.has(b.id)) {
+          if (editableBoardIdsRef.current.has(b.id)) {
+            locallyDeletedIdsRef.current.add(b.id);
+          }
+          locallyCreatedIdsRef.current.delete(b.id);
         }
       }
     });
@@ -278,8 +287,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
     if (!userId) return;
     if (!hasLoadedRef.current) return;
 
-    // ★ Si el array actual es EL MISMO que aplicamos desde el cloud,
-    //   no hay cambios locales → nada que guardar.
     if (boards === lastAppliedRemoteRef.current) return;
 
     const timeout = setTimeout(async () => {
@@ -292,7 +299,8 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           locallyCreatedIdsRef.current.has(b.id)
       );
 
-      if (candidates.length === 0) {
+      // ★ Si no hay candidatos Y tampoco hay borrados pendientes → nada que hacer
+      if (candidates.length === 0 && locallyDeletedIdsRef.current.size === 0) {
         setStatus('synced');
         return;
       }
@@ -308,7 +316,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         .filter((b) => !existingIds.has(b.id))
         .map((b) => boardToInsertRow(b, userId));
 
-      // ★ FIX: pasar userId a boardToUpdateRow
       const toUpdate = candidates
         .filter((b) => existingIds.has(b.id))
         .map((b) => boardToUpdateRow(b, userId));
@@ -334,7 +341,22 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         }
       }
 
-      // ★ Marcar el array actual como "ya guardado"
+      // ★ NUEVO: borrar en Supabase los boards eliminados localmente
+      if (locallyDeletedIdsRef.current.size > 0) {
+        const idsToDelete = Array.from(locallyDeletedIdsRef.current);
+        const { error: delErr } = await supabase
+          .from('boards')
+          .delete()
+          .in('id', idsToDelete);
+
+        if (delErr) {
+          console.warn('Error borrando tableros:', delErr.message);
+        } else {
+          // Éxito → limpiar el ref
+          locallyDeletedIdsRef.current.clear();
+        }
+      }
+
       lastAppliedRemoteRef.current = boards;
 
       const { data: memberships } = await supabase
@@ -415,8 +437,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
 
     const channel = supabase
       .channel(`boards-${userId}`)
-      // ★ SIN filtro user_id: así llegan también los cambios de boards
-      //   donde eres editor/viewer (RLS filtra en el server)
       .on(
         'postgres_changes',
         {
@@ -428,7 +448,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           reloadFromCloud();
         }
       )
-      // ★ Reaccionar cuando te añaden/quitan de un board
       .on(
         'postgres_changes',
         {
