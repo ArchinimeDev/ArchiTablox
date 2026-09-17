@@ -363,24 +363,6 @@ export function Sidebar({
           </div>
           <nav className="space-y-0.5">
             <button
-              data-active={view === 'board'}
-              onClick={() => {
-                sounds.nav();
-                onSetView('board');
-              }}
-              className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
-                view === 'board'
-                  ? 'bg-slate-800 text-slate-100 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={view === 'board' ? 'text-amber-400' : 'text-slate-500'}>
-                <rect x="3" y="3" width="7" height="18" rx="1" />
-                <rect x="14" y="3" width="7" height="18" rx="1" />
-              </svg>
-              <span className="flex-1 text-left">Kanban</span>
-            </button>
-            <button
               data-active={view === 'calendar'}
               onClick={() => {
                 sounds.nav();
@@ -397,24 +379,6 @@ export function Sidebar({
                 <path d="M16 2v4M8 2v4M3 10h18" />
               </svg>
               <span className="flex-1 text-left">Calendario</span>
-            </button>
-            <button
-              onClick={() => {
-                sounds.open();
-                onOpenArchive();
-              }}
-              className="nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                <rect x="2" y="3" width="20" height="5" rx="1" />
-                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-              </svg>
-              <span className="flex-1 text-left">Archivados</span>
-              {archivedCount > 0 && (
-                <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
-                  {archivedCount > 99 ? '99+' : archivedCount}
-                </span>
-              )}
             </button>
             <button
               data-active={view === 'myCards'}
@@ -520,8 +484,28 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — acciones y modales */}
       <div className="border-t border-slate-800 p-2 shrink-0">
+        <button
+          onClick={() => {
+            sounds.open();
+            onOpenArchive();
+          }}
+          className="interactive w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-900 mb-0.5"
+          title="Abre un modal con las tarjetas archivadas"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+            <rect x="2" y="3" width="20" height="5" rx="1" />
+            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+          </svg>
+          <span className="flex-1 text-left">Archivados</span>
+          {archivedCount > 0 && (
+            <span className="bg-slate-800 text-slate-400 text-[10px] font-mono px-1.5 rounded-full min-w-[18px] text-center">
+              {archivedCount > 99 ? '99+' : archivedCount}
+            </span>
+          )}
+        </button>
+
         <button
           onClick={() => {
             sounds.open();
