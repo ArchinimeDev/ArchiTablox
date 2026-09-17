@@ -1,3 +1,4 @@
+// app/components/Sidebar.tsx
 'use client';
 
 import { useState } from 'react';
@@ -27,6 +28,8 @@ interface Props {
   onSwitchBoard: (id: string) => void;
   onSetView: (v: ViewId) => void;
   onCreateBoard: (name: string) => void;
+  onDeleteBoard: (id: string) => void;  // ★ NUEVO
+  onRenameBoard: (id: string, name: string) => void;  // ★ NUEVO
   onOpenShare: () => void;
   onOpenArchive: () => void;
   onOpenCommand: () => void;
@@ -47,6 +50,8 @@ export function Sidebar({
   onSwitchBoard,
   onSetView,
   onCreateBoard,
+  onDeleteBoard,
+  onRenameBoard,
   onOpenShare,
   onOpenArchive,
   onOpenCommand,
@@ -56,6 +61,8 @@ export function Sidebar({
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
 
   const commitCreate = () => {
     const t = newName.trim();
@@ -64,6 +71,38 @@ export function Sidebar({
     onCreateBoard(t);
     setNewName('');
     setCreating(false);
+  };
+
+  const startRename = (b: Board) => {
+    sounds.click();
+    setEditingId(b.id);
+    setEditDraft(b.name);
+  };
+
+  const commitRename = () => {
+    if (!editingId) return;
+    const t = editDraft.trim();
+    if (t) {
+      sounds.click();
+      onRenameBoard(editingId, t);
+    }
+    setEditingId(null);
+    setEditDraft('');
+  };
+
+  const handleDelete = (b: Board) => {
+    if (boards.length <= 1) {
+      alert('No puedes eliminar el último tablero. Crea otro primero.');
+      return;
+    }
+    if (
+      window.confirm(
+        `¿Eliminar el tablero "${b.name}"?\n\nSe perderán todas sus tarjetas, columnas y comentarios. Esta acción no se puede deshacer.`
+      )
+    ) {
+      sounds.close();
+      onDeleteBoard(b.id);
+    }
   };
 
   return (
@@ -145,38 +184,79 @@ export function Sidebar({
               const isActive = b.id === activeBoardId;
               const isNew = newBoardIds.includes(b.id);
               const role = boardRoles[b.id];
-              const isOwner = role === 'owner';
+              const isOwner = role === 'owner' || !role; // ★ sin role = owner local
+              const isEditing = editingId === b.id;
+              const canDelete = isOwner && boards.length > 1;
+
+              if (isEditing) {
+                return (
+                  <div
+                    key={b.id}
+                    className="flex items-center gap-1 px-1"
+                  >
+                    <input
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename();
+                        if (e.key === 'Escape') {
+                          setEditingId(null);
+                          setEditDraft('');
+                        }
+                      }}
+                      autoFocus
+                      className="flex-1 bg-slate-900 border border-amber-500/60 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
+                    />
+                    <button
+                      onClick={commitRename}
+                      className="interactive bg-amber-500 hover:bg-amber-400 text-gray-950 font-medium rounded px-2 py-1 text-xs"
+                    >
+                      ✓
+                    </button>
+                  </div>
+                );
+              }
 
               return (
-                <button
+                <div
                   key={b.id}
-                  data-active={isActive}
-                  onClick={() => {
-                    sounds.nav();
-                    onSwitchBoard(b.id);
-                    onBoardOpened(b.id);
-                  }}
-                  className={`nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
+                  className={`group nav-item w-full flex items-center gap-2 px-2.5 h-8 rounded-lg text-xs ${
                     isActive
                       ? 'bg-slate-800 text-slate-100 font-medium'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={isActive ? 'text-amber-400 shrink-0' : 'text-slate-500 shrink-0'}
+                  <button
+                    onClick={() => {
+                      sounds.nav();
+                      onSwitchBoard(b.id);
+                      onBoardOpened(b.id);
+                    }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      if (isOwner) startRename(b);
+                    }}
+                    className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                    title={isOwner ? 'Doble click para renombrar' : b.name}
                   >
-                    <rect x="3" y="3" width="7" height="18" rx="1" />
-                    <rect x="14" y="3" width="7" height="18" rx="1" />
-                  </svg>
-                  <span className="flex-1 text-left truncate">{b.name}</span>
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={isActive ? 'text-amber-400 shrink-0' : 'text-slate-500 shrink-0'}
+                    >
+                      <rect x="3" y="3" width="7" height="18" rx="1" />
+                      <rect x="14" y="3" width="7" height="18" rx="1" />
+                    </svg>
+                    <span className="flex-1 truncate">{b.name}</span>
+                  </button>
+
                   {isNew && (
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 animate-breathe" />
                   )}
@@ -194,7 +274,52 @@ export function Sidebar({
                       <circle cx="9" cy="7" r="4" />
                     </svg>
                   )}
-                </button>
+
+                  {/* ★ BOTONES: solo visibles en hover, solo owner */}
+                  {isOwner && (
+                    <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-auto">
+                      {/* Renombrar */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startRename(b);
+                        }}
+                        className="interactive text-slate-500 hover:text-amber-400 p-0.5 rounded"
+                        title="Renombrar"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                      </button>
+                      {/* Eliminar */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!canDelete) {
+                            alert('No puedes eliminar el último tablero. Crea otro primero.');
+                            return;
+                          }
+                          handleDelete(b);
+                        }}
+                        disabled={!canDelete}
+                        className={`interactive p-0.5 rounded ${
+                          canDelete
+                            ? 'text-slate-500 hover:text-red-400'
+                            : 'text-slate-700 cursor-not-allowed'
+                        }`}
+                        title={
+                          canDelete
+                            ? 'Eliminar tablero'
+                            : 'No puedes eliminar el último tablero'
+                        }
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
