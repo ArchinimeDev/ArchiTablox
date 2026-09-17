@@ -1,6 +1,6 @@
 // store/board.ts
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   ActivityEvent,
   ActivityType,
@@ -872,7 +872,6 @@ export const useBoard = create<Store>()(
           }))
         ),
 
-      // ★ FIX: bloquear borrado si no hay columna destino para las tarjetas
       deleteColumn: (columnId) =>
         set((state) =>
           withActiveBoard(state, (board) => {
@@ -883,7 +882,6 @@ export const useBoard = create<Store>()(
               (c) => c.id !== columnId && !c.isDone
             );
 
-            // Si tiene tarjetas y no hay destino, no borramos nada.
             if (col.cardIds.length > 0 && !fallback) {
               console.warn(
                 '[board] deleteColumn bloqueado: no hay columna destino para las tarjetas'
@@ -1121,6 +1119,8 @@ export const useBoard = create<Store>()(
     {
       name: 'kanban-quest-storage',
       version: 22,
+      // ★ FIX: especificar storage explícito (necesario en Next.js con SSR)
+      storage: createJSONStorage(() => localStorage),
       migrate: (persisted: any, version) => {
         if (version < 10 && persisted?.columns) {
           const migratedBoard: Board = {
