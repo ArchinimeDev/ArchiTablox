@@ -1,4 +1,4 @@
-// hooks/useSyncBoards.ts
+// app/hooks/useSyncBoards.ts
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -48,9 +48,13 @@ function boardToInsertRow(board: Board, userId: string) {
   };
 }
 
-function boardToUpdateRow(board: Board) {
+// ★ FIX: incluir user_id también en el UPDATE.
+//   Sin esto, el UPSERT (INSERT ... ON CONFLICT DO UPDATE) intenta
+//   insertar con user_id=NULL → viola el NOT NULL constraint.
+function boardToUpdateRow(board: Board, userId: string) {
   return {
     id: board.id,
+    user_id: userId,
     name: board.name,
     data: {
       columns: board.columns,
@@ -232,8 +236,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
             rolesMap
           );
           setBoards(cloudBoards, activeId);
-          // ★ Marcar como "ya sincronizado" para que el save effect no
-          //   guarde inmediatamente lo que acabamos de leer.
           lastAppliedRemoteRef.current = cloudBoards;
         }
       } else {
@@ -245,7 +247,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           rolesMap
         );
         setBoards(cloudBoards, activeId);
-        lastAppliedRemoteRef.current = cloudBoards; // ★
+        lastAppliedRemoteRef.current = cloudBoards;
       }
 
       hasLoadedRef.current = true;
@@ -306,9 +308,10 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         .filter((b) => !existingIds.has(b.id))
         .map((b) => boardToInsertRow(b, userId));
 
+      // ★ FIX: pasar userId a boardToUpdateRow
       const toUpdate = candidates
         .filter((b) => existingIds.has(b.id))
-        .map((b) => boardToUpdateRow(b));
+        .map((b) => boardToUpdateRow(b, userId));
 
       if (toInsert.length > 0) {
         const { error } = await supabase
@@ -403,7 +406,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           rolesMap
         );
         setBoards(cloudBoards, activeId);
-        lastAppliedRemoteRef.current = cloudBoards; // ★
+        lastAppliedRemoteRef.current = cloudBoards;
       }
 
       setLastSyncAt(Date.now());
@@ -425,7 +428,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           reloadFromCloud();
         }
       )
-      // ★ NUEVO: reaccionar cuando te añaden/quitan de un board
+      // ★ Reaccionar cuando te añaden/quitan de un board
       .on(
         'postgres_changes',
         {
@@ -485,7 +488,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         rolesMap
       );
       setBoards(cloudBoards, activeId);
-      lastAppliedRemoteRef.current = cloudBoards; // ★
+      lastAppliedRemoteRef.current = cloudBoards;
     }
     setLastSyncAt(Date.now());
     setStatus('synced');
