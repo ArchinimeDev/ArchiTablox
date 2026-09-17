@@ -63,6 +63,38 @@ function boardToUpdateRow(board: Board) {
   };
 }
 
+/**
+ * ★ NUEVO: elige el mejor board para activar.
+ * Prioridad:
+ *   1. Si el actual sigue existiendo → mantenerlo
+ *   2. Si no, el que tiene MÁS MIEMBROS (compartidos primero)
+ *   3. Si empatan, el primero
+ */
+function pickActiveBoard(
+  cloudBoards: Board[],
+  currentActiveId: string,
+  boardRoles: Record<string, string>
+): string {
+  if (cloudBoards.length === 0) return '';
+
+  // 1. Mantener el actual si sigue existiendo
+  if (cloudBoards.some((b) => b.id === currentActiveId)) {
+    return currentActiveId;
+  }
+
+  // 2. Contar miembros por board (usando roles como proxy)
+  // Los boards compartidos tienen entrada en boardRoles con role !== 'owner'
+  const shared = cloudBoards.filter((b) => {
+    const role = boardRoles[b.id];
+    return role && role !== 'owner';
+  });
+
+  if (shared.length > 0) return shared[0].id;
+
+  // 3. Fallback: el primero
+  return cloudBoards[0].id;
+}
+
 export function useSyncBoards(): UseSyncBoardsReturn {
   const boards = useBoard((s) => s.boards);
   const setBoards = useBoard((s) => s.setBoards);
@@ -76,9 +108,13 @@ export function useSyncBoards(): UseSyncBoardsReturn {
   const isApplyingRemoteRef = useRef(false);
   const editableBoardIdsRef = useRef<Set<string>>(new Set());
   const lastLocalWriteRef = useRef<number>(0);
-  // ★ Solo tableros creados por el usuario DESPUÉS de la carga inicial
-  // se envían al cloud. Nunca el firstBoard inicial.
   const locallyCreatedIdsRef = useRef<Set<string>>(new Set());
+  // ★ Ref para acceder a boardRoles desde callbacks sin stale closure
+  const boardRolesRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    boardRolesRef.current = boardRoles;
+  }, [boardRoles]);
 
   // ============ 1. Escuchar auth ============
   useEffect(() => {
@@ -97,6 +133,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
           editableBoardIdsRef.current = new Set();
           locallyCreatedIdsRef.current = new Set();
           setBoardRoles({});
+          boardRolesRef.current = {};
           setStatus('idle');
         }
       }
@@ -129,6 +166,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       });
       editableBoardIdsRef.current = editableIds;
       setBoardRoles(rolesMap);
+      boardRolesRef.current = rolesMap;
 
       // 2. Cargar boards del cloud
       const { data, error } = await supabase
@@ -145,42 +183,42 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       isApplyingRemoteRef.current = true;
 
       if (data.length === 0) {
-        // ★ Cloud vacío: crear UN tablero fresco server-side.
-        // NUNCA subir el firstBoard local (evita el bug de los 37 boards).
-        const freshBoard: Board = {
-          id: crypto.randomUUID(),
-          name: 'Mi tablero',
-          columns: [
-            { id: crypto.randomUUID(), title: 'Por hacer', cardIds: [] },
-            {
-              id: crypto.randomUUID(),
-              title: 'En progreso',
-              cardIds: [],
-              wipLimit: 3,
-            },
-            {
-              id: crypto.randomUUID(),
-              title: 'Hecho',
-              cardIds: [],
-              isDone: true,
-            },
-          ],
-          cards: {},
-          labels: [],
-          notificationSettings: { ...DEFAULT_NOTIFICATION_SETTINGS },
-          templates: [],
-          activity: [],
-        };
-
+        // Cloud vacío → crear tablero fresco
+        const freshId = crypto.randomUUID();
         const { error: insErr } = await supabase
           .from('boards')
-          .insert(boardToInsertRow(freshBoard, userId));
+          .insert({
+            id: freshId,
+            user_id: userId,
+            name: 'Mi tablero',
+            data: {
+              columns: [
+                { id: crypto.randomUUID(), title: 'Por hacer', cardIds: [] },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'En progreso',
+                  cardIds: [],
+                  wipLimit: 3,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Hecho',
+                  cardIds: [],
+                  isDone: true,
+                },
+              ],
+              cards: {},
+              labels: [],
+              notificationSettings: { ...DEFAULT_NOTIFICATION_SETTINGS },
+              templates: [],
+              activity: [],
+            },
+          });
 
         if (insErr) {
           console.warn('Error creando tablero inicial:', insErr.message);
         }
 
-        // Refetch para traer el board recién creado
         const { data: fresh } = await supabase
           .from('boards')
           .select('*')
@@ -188,23 +226,24 @@ export function useSyncBoards(): UseSyncBoardsReturn {
 
         if (fresh && fresh.length > 0) {
           const cloudBoards = rowsToBoards(fresh);
-          setBoards(cloudBoards, cloudBoards[0].id);
-        } else {
-          setBoards([freshBoard], freshBoard.id);
+          const currentActiveId = useBoard.getState().activeBoardId;
+          const activeId = pickActiveBoard(
+            cloudBoards,
+            currentActiveId,
+            rolesMap
+          );
+          setBoards(cloudBoards, activeId);
         }
       } else {
-        // ★ Cloud tiene boards: REEMPLAZAR todo lo local.
-        // Los huérfanos del localStorage desaparecen.
         const cloudBoards = rowsToBoards(data);
-
         const currentActiveId = useBoard.getState().activeBoardId;
-        const activeExists = cloudBoards.some(
-          (b) => b.id === currentActiveId
-        );
-        setBoards(
+        // ★ AQUÍ EL FIX: elegir el mejor board
+        const activeId = pickActiveBoard(
           cloudBoards,
-          activeExists ? currentActiveId : cloudBoards[0].id
+          currentActiveId,
+          rolesMap
         );
+        setBoards(cloudBoards, activeId);
       }
 
       hasLoadedRef.current = true;
@@ -227,7 +266,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       const prevIds = new Set(prevState.boards.map((b) => b.id));
       for (const b of state.boards) {
         if (!prevIds.has(b.id)) {
-          // Board nuevo creado por el usuario → marcar para insertar
           locallyCreatedIdsRef.current.add(b.id);
         }
       }
@@ -245,7 +283,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       setStatus('saving');
       const supabase = createClient();
 
-      // Solo guardar boards editables o creados localmente
       const candidates = boards.filter(
         (b) =>
           editableBoardIdsRef.current.has(b.id) ||
@@ -257,7 +294,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         return;
       }
 
-      // Separar inserts de updates
       const { data: existing } = await supabase
         .from('boards')
         .select('id')
@@ -274,7 +310,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         .map((b) => boardToUpdateRow(b));
 
       if (toInsert.length > 0) {
-        // ★ upsert con ignoreDuplicates: nunca rompe con 409
         const { error } = await supabase
           .from('boards')
           .upsert(toInsert, { onConflict: 'id', ignoreDuplicates: true });
@@ -295,7 +330,6 @@ export function useSyncBoards(): UseSyncBoardsReturn {
         }
       }
 
-      // Refetch memberships
       const { data: memberships } = await supabase
         .from('board_members')
         .select('board_id, role')
@@ -311,6 +345,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       });
       editableBoardIdsRef.current = editableIds;
       setBoardRoles(rolesMap);
+      boardRolesRef.current = rolesMap;
 
       lastLocalWriteRef.current = Date.now();
       setLastSyncAt(Date.now());
@@ -353,19 +388,19 @@ export function useSyncBoards(): UseSyncBoardsReturn {
       });
       editableBoardIdsRef.current = editableIds;
       setBoardRoles(rolesMap);
+      boardRolesRef.current = rolesMap;
 
       isApplyingRemoteRef.current = true;
 
       const cloudBoards = rowsToBoards(data);
       if (cloudBoards.length > 0) {
         const currentActiveId = useBoard.getState().activeBoardId;
-        const activeExists = cloudBoards.some(
-          (b) => b.id === currentActiveId
-        );
-        setBoards(
+        const activeId = pickActiveBoard(
           cloudBoards,
-          activeExists ? currentActiveId : cloudBoards[0].id
+          currentActiveId,
+          rolesMap
         );
+        setBoards(cloudBoards, activeId);
       }
 
       setLastSyncAt(Date.now());
@@ -420,6 +455,7 @@ export function useSyncBoards(): UseSyncBoardsReturn {
     });
     editableBoardIdsRef.current = editableIds;
     setBoardRoles(rolesMap);
+    boardRolesRef.current = rolesMap;
 
     const { data } = await supabase
       .from('boards')
@@ -432,13 +468,12 @@ export function useSyncBoards(): UseSyncBoardsReturn {
     const cloudBoards = rowsToBoards(data);
     if (cloudBoards.length > 0) {
       const currentActiveId = useBoard.getState().activeBoardId;
-      const activeExists = cloudBoards.some(
-        (b) => b.id === currentActiveId
-      );
-      setBoards(
+      const activeId = pickActiveBoard(
         cloudBoards,
-        activeExists ? currentActiveId : cloudBoards[0].id
+        currentActiveId,
+        rolesMap
       );
+      setBoards(cloudBoards, activeId);
     }
     setLastSyncAt(Date.now());
     setStatus('synced');
