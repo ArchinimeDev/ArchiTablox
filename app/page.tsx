@@ -189,6 +189,8 @@ export default function Home() {
   const deleteColumn = useBoard((s) => s.deleteColumn);
   const createBoard = useBoard((s) => s.createBoard);
   const switchBoard = useBoard((s) => s.switchBoard);
+  const deleteBoard = useBoard((s) => s.deleteBoard);
+  const renameBoard = useBoard((s) => s.renameBoard);
   const importData = useBoard((s) => s.importData);
   const updateNotificationSettings = useBoard(
     (s) => s.updateNotificationSettings
@@ -238,8 +240,6 @@ export default function Home() {
     boardId: string;
   } | null>(null);
 
-  // ★ MOVER AQUÍ ARRIBA: así todos los handlers pueden usar `editingCard`
-  //   sin riesgo de TDZ (Temporal Dead Zone).
   const editingCard = editingId ? cards[editingId] : null;
 
   const newCardInputRef = useRef<HTMLInputElement>(null);
@@ -755,7 +755,6 @@ export default function Home() {
     );
   }
 
-  // ★ Nota: `editingCard` ya está declarado arriba (línea ~150)
   const hasActiveFilters =
     !!search || filterPriority !== 'all' || filterLabel !== 'all';
 
@@ -788,6 +787,8 @@ export default function Home() {
         onSwitchBoard={switchBoard}
         onSetView={setView}
         onCreateBoard={createBoard}
+        onDeleteBoard={deleteBoard}
+        onRenameBoard={renameBoard}
         onOpenShare={() => setShowShare(true)}
         onOpenArchive={() => setShowArchive(true)}
         onOpenCommand={() => setShowCommand(true)}
